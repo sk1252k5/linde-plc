@@ -46,6 +46,9 @@ const PLANTS = [
   { id: "TN-02", name: "Chennai",         type: "H₂",      oee: 88.5, energy:  7.8, status: "Monitoring" as PlantStatus },
   { id: "WB-05", name: "Kolkata",         type: "H₂",      oee: 85.3, energy:  6.1, status: "Monitoring" as PlantStatus },
   { id: "KA-07", name: "Bangalore South", type: "ASU",     oee: 76.4, energy:  null, status: "Alert"     as PlantStatus },
+  { id: "KA-01", name: "Bangalore North", type: "ASU",     oee: 94.2, energy: 12.1, status: "Optimized"  as PlantStatus },
+  { id: "MH-04", name: "Pune",            type: "ASU+H₂", oee: 91.8, energy:  9.4, status: "Optimized"  as PlantStatus },
+  { id: "GJ-11", name: "Surat",           type: "ASU",     oee: 92.7, energy: 10.2, status: "Optimized"  as PlantStatus },
 ];
 
 type Alert = {
@@ -325,18 +328,21 @@ export default function Manufacturing() {
             PLANT OVERVIEW
         ════════════════════════════════════════════════════════════════════ */}
         <TabsContent value="plants" className="mt-4">
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+          {/* FIX: added items-stretch so both columns match height */}
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-3 items-stretch">
 
             {/* Facility table */}
             <div className="xl:col-span-2">
-              <Card className="border-border bg-card">
-                <CardHeader className="border-b border-border px-5 py-4">
+              {/* FIX: h-full + flex flex-col so card fills the column height */}
+              <Card className="border-border bg-card h-full flex flex-col">
+                <CardHeader className="border-b border-border px-5 py-4 shrink-0">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-sm font-semibold">Facility Status</CardTitle>
                     <span className="text-[11px] text-muted-foreground">8 of 600+ facilities</span>
                   </div>
                 </CardHeader>
-                <CardContent className="p-0">
+                {/* FIX: flex-1 so table area expands to fill remaining card height */}
+                <CardContent className="p-0 flex-1">
                   <Table>
                     <TableHeader>
                       <TableRow className="border-border hover:bg-transparent">
@@ -392,10 +398,10 @@ export default function Manufacturing() {
               </Card>
             </div>
 
-            {/* Right column */}
-            <div className="space-y-4">
-              {/* AI Agents */}
-              <Card className="border-border bg-card">
+            {/* Right column — FIX: flex flex-col h-full so cards stack and fill height */}
+            <div className="flex flex-col h-full gap-4">
+              {/* AI Agents — FIX: flex-1 so it grows to fill space above the alert card */}
+              <Card className="border-border bg-card flex-1">
                 <CardHeader className="border-b border-border px-5 py-4">
                   <CardTitle className="text-sm font-semibold">AI Agents — Plant Ops</CardTitle>
                 </CardHeader>
@@ -434,8 +440,8 @@ export default function Manufacturing() {
                 </CardContent>
               </Card>
 
-              {/* Critical alert CTA */}
-              <Card className="border-destructive/30 bg-destructive/5">
+              {/* Critical alert CTA — shrink-0 keeps it at its natural height */}
+              <Card className="border-destructive/30 bg-destructive/5 shrink-0">
                 <CardContent className="space-y-3 p-5">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2">

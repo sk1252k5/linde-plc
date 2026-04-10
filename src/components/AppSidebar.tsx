@@ -39,8 +39,8 @@ const DEPT_NAV = [
   { label: "Manufacturing", to: "/manufacturing", icon: Factory },
   { label: "Commercial & Trading", to: "/commercial", icon: TrendingUp },
   { label: "Finance & ERP", to: "/finance", icon: Banknote },
-  {label: "HR & Safety", to: "/#", icon: UsersRound},
-  {label: "IT & Cybersecurity", to: "/#", icon: Shield},
+  {label: "HR & Safety", to: "/hr", icon: UsersRound},
+  {label: "IT & Cybersecurity", to: "/it", icon: Shield},
 ];
 
 const SYSTEM_NAV = [
