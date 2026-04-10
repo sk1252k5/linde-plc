@@ -8,7 +8,7 @@
 
 ## 1. Platform Overview
 
-Linde EOS is a dark-mode, enterprise-grade web application that gives senior leaders (CTO, COO, CDO, CFO, VP-level) a unified interface to:
+Linde EOS is enterprise-grade web application that gives senior leaders (CTO, COO, CDO, CFO, VP-level) a unified interface to:
 
 - **Monitor** real-time status of 600+ manufacturing facilities and 8,000+ tanker fleet vehicles
 - **Manage** a network of 47+ autonomous AI agents making 1,200+ decisions per hour
@@ -254,99 +254,6 @@ The Command Center (`view-dashboard`) is the default active view on login. It is
 The four top metrics (AI Agents Active, Fleet Utilization, Tech Debt, Pending Approvals) act as the platform's vital signs. Red/amber metrics here indicate the user must navigate to the relevant view for action.
 
 ---
-
-## 7. Data Model & Key Metrics
-
-This section lists the canonical values and terminology used throughout the platform. LLMs generating new views or components should treat these as ground truth.
-
-### 7.1 Scale of Operations
-
-| Entity                     | Scale         |
-|----------------------------|---------------|
-| Manufacturing facilities   | 600+          |
-| Compressors monitored      | 2,400+        |
-| Customer tank installations| 80,000+       |
-| Tanker fleet (total)       | 8,000+        |
-| Tankers active (typical)   | ~6,847 (84%)  |
-| Employees                  | 66,000+       |
-| Countries of operation     | 80+           |
-
-### 7.2 AI Programme Metrics
-
-| Metric                    | Current Value  | Target / Baseline        |
-|---------------------------|----------------|--------------------------|
-| Active AI agents          | 47             | —                        |
-| Decisions per hour        | 1,247          | —                        |
-| Human override rate       | 2.3%           | Within SLA               |
-| Agent accuracy (avg)      | 94.7%          | ↑ from 91.2%             |
-| Fleet utilization         | 84%            | ↑ 7% vs manual           |
-| On-time delivery rate     | 97.3%          | ↑ 8.4% vs manual         |
-| Emergency deliveries      | 3 (active)     | ↓ 40% vs baseline        |
-| Financial close time      | 5.2 days       | Target: ≤5 days; was 9+  |
-| Interco. automation rate  | 94%            | —                        |
-| Tech debt reduced         | 41%            | Target: 60% in 24 months |
-| AI value delivered (YTD)  | $42.4M         | —                        |
-| 5-year NPV (projected)    | $840M          | Baseline scenario        |
-
-### 7.3 Financial Summary (ROI Table)
-
-| Domain                  | Annual Saving | 5-Year NPV | Payback Period |
-|-------------------------|---------------|------------|----------------|
-| ASU Energy Optimization | $48M          | $220M      | 14 months      |
-| Fleet Routing AI        | $32M          | $148M      | 18 months      |
-| Predictive Maintenance  | $28M          | $130M      | 20 months      |
-| Financial Close         | $12M          | $56M       | 8 months       |
-| IT Ticket Deflection    | $18M          | $84M       | 12 months      |
-| **Total**               | **$138M**     | **$638M**  | **16 mo avg**  |
-
-### 7.4 Workforce AI Adoption (3 Levels)
-
-- **Level 1 — AI Awareness (All Staff):** 71% complete
-- **Level 2 — AI User (Primary Users):** 48% complete
-- **Level 3 — AI Builder (CoE + Power Users):** 34/50 certified (target by Month 30)
-
-### 7.5 Tank Criticality Thresholds
-
-Customer tank fill levels use a three-tier system:
-
-| Status   | Threshold    | Color         | Action                              |
-|----------|--------------|---------------|-------------------------------------|
-| Critical | < 25%        | `--accent4`   | Immediate AI dispatch + human approval |
-| Warning  | 25–40%       | `--accent3`   | Schedule delivery within 24 hours   |
-| OK       | > 40%        | `--accent2`   | No action required                  |
-
-### 7.6 Agent Types
-
-| Agent Name                  | Domain         | Key Metric           |
-|-----------------------------|----------------|----------------------|
-| Demand Prediction Agent     | Supply Chain   | 99.2% accuracy       |
-| Route Optimization Agent    | Supply Chain   | 18% cost savings     |
-| Supply Chain Coordinator    | Supply Chain   | Conflict resolution  |
-| ASU Energy Optimizer        | Manufacturing  | 11.4% energy savings |
-| Predictive Maintenance Agent| Manufacturing  | 73 active alerts     |
-| Finance Close Agent         | Finance        | 5.2-day close        |
-| HR Scheduling Agent         | HR             | Standby              |
-| Hydrogen Pricing Agent      | Commercial     | In training          |
-
----
-
-## 8. Role-Based Access & Personas
-
-Users select their role at login. The active role is displayed in the topbar throughout the session and determines the default emphasis of data presented (though all views remain accessible in the prototype).
-
-| Role Code | Name          | Department              | Primary Focus                       |
-|-----------|---------------|-------------------------|-------------------------------------|
-| CTO       | Arjun Nair    | IT & Architecture       | Tech debt, cybersecurity, AI infra  |
-| COO       | Priya Sharma  | Supply Chain & Ops      | Fleet, plants, delivery performance |
-| CDO       | Rahul Mehta   | AI & Data               | Agent network, model registry, CoE  |
-| CFO       | Deepa Iyer    | Finance                 | ROI, financial close, ERP migration |
-| VP_SC     | Kiran Raj     | Supply Chain            | Fleet operations, tank monitoring   |
-| VP_OPS    | Suresh Kumar  | Plant Operations        | ASU health, OEE, maintenance        |
-
-In a production implementation, role-based access would hide irrelevant sidebar sections and surface role-specific alerts and decision queues first. In the prototype, all sections are visible to all roles.
-
----
-
 ## 9. Interaction Patterns
 
 ### 9.1 Human-in-the-Loop Approvals
