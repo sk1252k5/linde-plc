@@ -30,7 +30,7 @@ import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 const CORE_NAV = [
-  { label: "Command Center", to: "/", icon: LayoutDashboard, exact: true },
+  { label: "Command Center", to: "/command-center", icon: LayoutDashboard, exact: true },
   { label: "AI Agent Network", to: "/agents", icon: BrainCircuit },
 ];
 
@@ -44,8 +44,8 @@ const DEPT_NAV = [
 ];
 
 const SYSTEM_NAV = [
-  { label: "EOS Assistant", to: "/#", icon: Brain },
-  {label: "Settings", to: "/#", icon: Settings},
+  { label: "EOS Assistant", to: "/assistant", icon: Brain },
+  { label: "Settings", to: "/settings", icon: Settings },
 ];
 
 export function Logo() {
