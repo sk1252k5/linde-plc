@@ -1,5 +1,6 @@
 import { type RouteObject, Navigate } from "react-router-dom";
 import Layout from "./components/Layout";
+import SystemLayout from "./components/SystemLayout";
 import LandingPage from "./pages/LandingPage";
 import CommandCenter from "./pages/CommandCenter";
 import AgentNetwork from "./pages/AgentNetwork";
@@ -11,14 +12,20 @@ import Hr from "./pages/Hr";
 import ItCybersecurity from "./pages/It & cybersecurity";
 import EosAssistant from "./pages/EosAssistant";
 import Settings from "./pages/Settings";
-import HomePage from "./HomePage";
+import VisionPanel from "./VisionPanel";
+import ConsolidatedDashboard from "./pages/ConsolidatedDashboard";
 
 export const Routes: RouteObject[] = [
   {
     path: "/",
     children: [
       { index: true, element: <LandingPage /> },
-      { path: "home", element: <HomePage /> },
+      {
+        element: <SystemLayout />,
+        children: [
+          { path: "vision-panel", element: <VisionPanel /> },
+        ],
+      },
       {
         element: <Layout />,
         children: [
@@ -32,6 +39,8 @@ export const Routes: RouteObject[] = [
           { path: "it", element: <ItCybersecurity /> },
           { path: "assistant", element: <EosAssistant /> },
           { path: "settings", element: <Settings /> },
+          { path: "consolidated-dashboard", element: <ConsolidatedDashboard /> },
+
         ],
       },
     ],

@@ -1,11 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
-// ─── Linde Official Brand Colors ───────────────────────────────────────────
-// Primary: #005591 (Linde Blue)
-// Accent:  #007AB9 (Linde Blue)
-// White:   #FFFFFF
-// Light theme: clean professional Linde palette
+import { Button } from "@/components/ui/button";
+import { ArrowRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -30,7 +27,7 @@ export default function LandingPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Canvas: animated particle network
+  // Canvas particle network
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -50,22 +47,20 @@ export default function LandingPage() {
     resize();
     window.addEventListener("resize", resize);
 
-    // Spawn particles
-    for (let i = 0; i < 80; i++) {
+    for (let i = 0; i < 72; i++) {
       particles.push({
         x: Math.random() * window.innerWidth,
         y: Math.random() * window.innerHeight,
-        vx: (Math.random() - 0.5) * 0.4,
-        vy: (Math.random() - 0.5) * 0.4,
-        r: Math.random() * 1.8 + 0.6,
-        opacity: Math.random() * 0.5 + 0.1,
+        vx: (Math.random() - 0.5) * 0.35,
+        vy: (Math.random() - 0.5) * 0.35,
+        r: Math.random() * 1.6 + 0.5,
+        opacity: Math.random() * 0.4 + 0.1,
       });
     }
 
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Connect nearby particles
       for (let i = 0; i < particles.length; i++) {
         for (let j = i + 1; j < particles.length; j++) {
           const dx = particles[i].x - particles[j].x;
@@ -73,8 +68,8 @@ export default function LandingPage() {
           const dist = Math.sqrt(dx * dx + dy * dy);
           if (dist < 130) {
             ctx.beginPath();
-            ctx.strokeStyle = `rgba(0, 163, 224, ${(1 - dist / 130) * 0.18})`;
-            ctx.lineWidth = 0.6;
+            ctx.strokeStyle = `rgba(79, 142, 247, ${(1 - dist / 130) * 0.15})`;
+            ctx.lineWidth = 0.5;
             ctx.moveTo(particles[i].x, particles[i].y);
             ctx.lineTo(particles[j].x, particles[j].y);
             ctx.stroke();
@@ -82,11 +77,10 @@ export default function LandingPage() {
         }
       }
 
-      // Draw dots
       particles.forEach((p) => {
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(0, 163, 224, ${p.opacity})`;
+        ctx.fillStyle = `rgba(79, 142, 247, ${p.opacity})`;
         ctx.fill();
 
         p.x += p.vx;
@@ -107,22 +101,38 @@ export default function LandingPage() {
 
   const handleLaunch = () => {
     setLaunched(true);
-    setTimeout(() => navigate("/home"), 800);
+    setTimeout(() => navigate("/vision-panel"), 800);
   };
 
   return (
-    <div style={styles.root}>
-      {/* ── Canvas particle network ── */}
-      <canvas ref={canvasRef} style={styles.canvas} />
+    <div className="fixed inset-0 flex flex-col items-center justify-center overflow-hidden bg-background font-heading">
 
-      {/* ── Grid overlay ── */}
-      <div style={styles.grid} />
+      {/* ── Canvas ── */}
+      <canvas ref={canvasRef} className="pointer-events-none fixed inset-0 z-0" />
 
-      {/* ── Left edge accent bar ── */}
-      <div style={styles.leftBar} />
+       {/* ── Subtle grid overlay ── */}
+      <div
+        className="pointer-events-none fixed inset-0 z-1"
+        style={{
+          backgroundImage: `
+            linear-gradient(rgba(79, 142, 247, 0.02) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(79, 142, 247, 0.02) 1px, transparent 1px)
+          `,
+          backgroundSize: "52px 52px",
+        }}
+      />
 
       {/* ── Top accent line ── */}
-      <div style={styles.topLine} />
+      <div
+        className="pointer-events-none fixed inset-x-0 top-0 z-[5] h-px"
+        style={{ background: "linear-gradient(90deg, transparent 0%, hsl(var(--primary)) 30%, hsl(var(--primary) / 0.6) 70%, transparent 100%)" }}
+      />
+
+      {/* ── Left accent bar ── */}
+      <div
+        className="pointer-events-none fixed bottom-0 left-0 top-0 z-[5] w-px"
+        style={{ background: "linear-gradient(180deg, transparent 0%, hsl(var(--primary)) 30%, hsl(var(--primary) / 0.6) 70%, transparent 100%)" }}
+      />
 
       {/* ── Corner brackets ── */}
       <Corner pos="tl" />
@@ -130,51 +140,60 @@ export default function LandingPage() {
       <Corner pos="bl" />
       <Corner pos="br" />
 
-      {/* ── Scan line ── */}
-      <div style={styles.scanLine} />
-
-      {/* ── Radial glow behind logo ── */}
-      <div style={styles.glowOrb} />
+      {/* ── Radial glow ── */}
+      <div
+        className="pointer-events-none fixed z-[1]"
+        style={{
+          width: 640,
+          height: 640,
+          borderRadius: "50%",
+          background: "radial-gradient(circle, hsl(var(--primary) / 0.1) 0%, hsl(var(--primary) / 0.05) 40%, transparent 70%)",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -58%)",
+        }}
+      />
 
       {/* ── Main content ── */}
       <main
-        style={{
-          ...styles.main,
-          opacity: visible ? 1 : 0,
-          transform: visible ? "translateY(0)" : "translateY(24px)",
-          transition: "opacity 0.9s ease, transform 0.9s ease",
-        }}
+        className={cn(
+          "relative z-10 flex flex-col items-center px-6 text-center",
+          "transition-all duration-700 ease-out",
+          visible ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0",
+        )}
       >
         {/* Status pill */}
-        <div style={styles.statusPill}>
-          <span style={styles.statusDot} />
-          <span style={styles.statusText}>ALL SYSTEMS OPERATIONAL · EOS v2.0</span>
-        </div>
-
-        {/* Linde wordmark */}
-        <div style={styles.lindeWordmark}>
-          <LindeLogoSVG />
+        <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-border bg-muted px-4 py-1.5">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-chart-2" />
+          <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            All Systems Operational · EOS v2.0
+          </span>
         </div>
 
         {/* LENA wordmark */}
-        <h1 style={styles.lenaWordmark}>LENA</h1>
+        <h1
+          className="font-heading font-bold leading-none tracking-[0.22em] text-foreground"
+          style={{ fontSize: "clamp(80px, 13vw, 116px)" }}
+        >
+          LENA
+        </h1>
 
         {/* Full name */}
-        <p style={styles.fullName}>
+        <p className="mb-8 mt-1.5 font-mono text-[11px] uppercase tracking-[0.28em] text-muted-foreground/60">
           Linde&rsquo;s Enterprise Neural Agent
         </p>
 
         {/* Animated taglines */}
-        <div style={styles.taglineWrap}>
+        <div className="mb-7 flex flex-wrap items-center justify-center gap-8">
           {taglines.map((t, i) => (
             <span
               key={t}
-              style={{
-                ...styles.taglineItem,
-                color: i === taglineIndex ? "#007AB9" : "rgba(0,47,90,0.35)",
-                transform: i === taglineIndex ? "scale(1)" : "scale(0.96)",
-                transition: "color 0.5s ease, transform 0.5s ease",
-              }}
+              className={cn(
+                "inline-block text-lg font-semibold tracking-wide transition-all duration-500",
+                i === taglineIndex
+                  ? "scale-100 text-primary"
+                  : "scale-95 text-foreground/25",
+              )}
             >
               {t}
             </span>
@@ -182,358 +201,101 @@ export default function LandingPage() {
         </div>
 
         {/* Divider */}
-        <div style={styles.divider} />
+        <div
+          className="mb-6 h-px w-44"
+          style={{ background: "linear-gradient(90deg, transparent, hsl(var(--primary) / 0.35), transparent)" }}
+        />
 
-        {/* Tagline description */}
-        <p style={styles.description}>
+        {/* Description */}
+        <p className="mb-10 max-w-md text-sm leading-relaxed text-muted-foreground">
           Orchestrating{" "}
-          <strong style={styles.highlight}>47+ autonomous agents</strong> across{" "}
-          <strong style={styles.highlight}>600+ facilities</strong> and an{" "}
-          <strong style={styles.highlight}>8,000-vehicle fleet</strong> —
-          <br />
-          real-time decisions, enterprise-grade control.
+          <span className="font-semibold text-foreground">47+ autonomous agents</span>{" "}
+          across{" "}
+          <span className="font-semibold text-foreground">600+ facilities</span>{" "}
+          and an{" "}
+          <span className="font-semibold text-foreground">8,000-vehicle fleet</span>{" "}
+          — real-time decisions, enterprise-grade control.
         </p>
 
-        {/* CTA button */}
-        <button
-          style={{
-            ...styles.ctaBtn,
-            background: launched
-              ? "#007AB9"
-              : "linear-gradient(135deg, #005AB9 0%, #007AB9 100%)",
-            transform: launched ? "scale(0.97)" : "scale(1)",
-          }}
+        {/* CTA */}
+        <Button
+          size="lg"
+          className="mb-12 gap-2 px-10 text-xs font-bold uppercase tracking-[0.18em]"
           onClick={handleLaunch}
-          onMouseEnter={(e) => {
-            if (!launched)
-              (e.currentTarget as HTMLButtonElement).style.boxShadow =
-                "0 0 40px rgba(0,122,185,0.45), 0 8px 32px rgba(0,47,90,0.35)";
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.boxShadow =
-              "0 4px 24px rgba(0,85,145,0.35)";
-          }}
+          disabled={launched}
         >
           {launched ? "✓  Initialising..." : "Initialise Platform"}
-          {!launched && (
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 16 16"
-              fill="none"
-              style={{ marginLeft: 10 }}
-            >
-              <path
-                d="M3 8h10M9 4l4 4-4 4"
-                stroke="white"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          )}
-        </button>
+          {!launched && <ArrowRight className="h-4 w-4" />}
+        </Button>
 
         {/* Stats row */}
-        <div style={styles.statsRow}>
+        <div className="flex flex-wrap items-center justify-center">
           {[
             { val: "1,200+", label: "Decisions / hr" },
-            { val: "47", label: "Active Agents" },
-            { val: "99.4%", label: "System Uptime" },
-            { val: "600+", label: "Facilities" },
+            { val: "47",     label: "Active Agents"  },
+            { val: "99.4%",  label: "System Uptime"  },
+            { val: "600+",   label: "Facilities"      },
           ].map((s, i, arr) => (
-            <div key={s.label} style={{ display: "flex", alignItems: "center", gap: 28 }}>
-              <div style={styles.statItem}>
-                <span style={styles.statVal}>{s.val}</span>
-                <span style={styles.statLabel}>{s.label}</span>
+            <div key={s.label} className="flex items-center">
+              <div className="flex flex-col items-center gap-1 px-7">
+                <span className="font-mono text-xl font-medium text-primary tabular-nums">
+                  {s.val}
+                </span>
+                <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground/60">
+                  {s.label}
+                </span>
               </div>
-              {i < arr.length - 1 && <div style={styles.statDivider} />}
+              {i < arr.length - 1 && (
+                <div className="h-8 w-px bg-border" />
+              )}
             </div>
           ))}
         </div>
       </main>
 
-      {/* ── Bottom classification bar ── */}
-      <footer style={styles.footer}>
-        <span>LINDE EOS · LENA v2.0</span>
-        <span style={{ color: "rgba(255,255,255,0.2)" }}>·</span>
-        <span>CLASSIFICATION: INTERNAL</span>
-        <span style={{ color: "rgba(255,255,255,0.2)" }}>·</span>
-        <span>AUTHORISED ACCESS ONLY</span>
+      {/* ── Footer classification bar ── */}
+      <footer className="fixed bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-4 whitespace-nowrap font-mono text-[9px] uppercase tracking-[0.12em] text-muted-foreground/40">
+        <span>LENA · EOS v2.0</span>
+        <span className="text-border">·</span>
+        <span>Classification: Internal</span>
+        <span className="text-border">·</span>
+        <span>Authorised Access Only</span>
       </footer>
     </div>
   );
 }
 
-// ─── Corner Bracket Component ───────────────────────────────────────────────
-function Corner({ pos }: { pos: "tl" | "tr" | "bl" | "br" }) {
-  const size = 52;
-  const thickness = 1.5;
-  const color = "rgba(0, 163, 224, 0.35)";
-  const base: React.CSSProperties = {
-    position: "fixed",
-    width: size,
-    height: size,
-    pointerEvents: "none",
-    zIndex: 5,
-  };
-  const positions: Record<string, React.CSSProperties> = {
-    tl: { top: 20, left: 20, borderTop: `${thickness}px solid ${color}`, borderLeft: `${thickness}px solid ${color}` },
-    tr: { top: 20, right: 20, borderTop: `${thickness}px solid ${color}`, borderRight: `${thickness}px solid ${color}` },
-    bl: { bottom: 20, left: 20, borderBottom: `${thickness}px solid ${color}`, borderLeft: `${thickness}px solid ${color}` },
-    br: { bottom: 20, right: 20, borderBottom: `${thickness}px solid ${color}`, borderRight: `${thickness}px solid ${color}` },
-  };
-  return <div style={{ ...base, ...positions[pos] }} />;
-}
+// ── Corner brackets ────────────────────────────────────────────────────────────
 
-// ─── Linde Logo SVG ─────────────────────────────────────────────────────────
-function LindeLogoSVG() {
+function Corner({ pos }: { pos: "tl" | "tr" | "bl" | "br" }) {
+  const SIZE = 48;
+  const THICKNESS = 1.5;
+  const COLOR = "hsl(var(--primary) / 0.3)";
+
+  const position: React.CSSProperties =
+    pos === "tl" ? { top: 20, left: 20 } :
+    pos === "tr" ? { top: 20, right: 20 } :
+    pos === "bl" ? { bottom: 20, left: 20 } :
+                   { bottom: 20, right: 20 };
+
+  const borders: React.CSSProperties =
+    pos === "tl" ? { borderTop: `${THICKNESS}px solid ${COLOR}`, borderLeft:  `${THICKNESS}px solid ${COLOR}` } :
+    pos === "tr" ? { borderTop: `${THICKNESS}px solid ${COLOR}`, borderRight: `${THICKNESS}px solid ${COLOR}` } :
+    pos === "bl" ? { borderBottom: `${THICKNESS}px solid ${COLOR}`, borderLeft:  `${THICKNESS}px solid ${COLOR}` } :
+                   { borderBottom: `${THICKNESS}px solid ${COLOR}`, borderRight: `${THICKNESS}px solid ${COLOR}` };
+
   return (
-    <svg width="120" height="36" viewBox="0 0 120 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-      {/* Stylised "Linde" text-style wordmark bars */}
-      <rect x="0" y="0" width="6" height="36" rx="1" fill="#005591" />
-      <rect x="0" y="30" width="36" height="6" rx="1" fill="#005591" />
-      <rect x="14" y="0" width="6" height="24" rx="1" fill="#007AB9" />
-      <rect x="28" y="0" width="6" height="36" rx="1" fill="#005591" />
-      {/* "LINDE" label */}
-      <text x="46" y="24" fontFamily="'Rajdhani', sans-serif" fontWeight="700" fontSize="22" fill="#FFFFFF" letterSpacing="4">LINDE</text>
-    </svg>
+    <div
+      style={{
+        position: "fixed",
+        width: SIZE,
+        height: SIZE,
+        borderRadius: 0,
+        pointerEvents: "none",
+        zIndex: 5,
+        ...position,
+        ...borders,
+      }}
+    />
   );
 }
-
-// ─── Styles ──────────────────────────────────────────────────────────────────
-const styles: Record<string, React.CSSProperties> = {
-  root: {
-    position: "fixed",
-    inset: 0,
-    background: "#f8fbff",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-    fontFamily: "'Rajdhani', sans-serif",
-    color: "#002f5a",
-  },
-  canvas: {
-    position: "fixed",
-    inset: 0,
-    zIndex: 0,
-    pointerEvents: "none",
-  },
-  grid: {
-    position: "fixed",
-    inset: 0,
-    zIndex: 1,
-    pointerEvents: "none",
-    backgroundImage: `
-      linear-gradient(rgba(0,122,185,0.08) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,122,185,0.08) 1px, transparent 1px)
-    `,
-    backgroundSize: "52px 52px",
-  },
-  leftBar: {
-    position: "fixed",
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 3,
-    background: "linear-gradient(180deg, transparent 0%, #007AB9 30%, rgba(0,122,185,0.8) 60%, transparent 100%)",
-    zIndex: 5,
-    opacity: 0.75,
-  },
-  topLine: {
-    position: "fixed",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 2,
-    background: "linear-gradient(90deg, transparent 0%, #007AB9 20%, rgba(0,122,185,0.85) 50%, #007AB9 80%, transparent 100%)",
-    zIndex: 5,
-    opacity: 0.85,
-  },
-  scanLine: {
-    position: "fixed",
-    left: 0,
-    right: 0,
-    height: 1,
-    background: "linear-gradient(90deg, transparent, rgba(0,122,185,0.25), transparent)",
-    pointerEvents: "none",
-    zIndex: 3,
-    animation: "scanAnim 9s linear infinite",
-  },
-  glowOrb: {
-    position: "fixed",
-    width: 600,
-    height: 600,
-    borderRadius: "50%",
-    background: "radial-gradient(circle, rgba(0,122,185,0.14) 0%, rgba(0,122,185,0.08) 40%, transparent 70%)",
-    top: "50%",
-    left: "50%",
-    transform: "translate(-50%, -58%)",
-    pointerEvents: "none",
-    zIndex: 1,
-    animation: "glowPulse 5s ease-in-out infinite",
-  },
-  main: {
-    position: "relative",
-    zIndex: 10,
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    textAlign: "center",
-    padding: "0 24px",
-    gap: 0,
-  },
-  statusPill: {
-    display: "inline-flex",
-    alignItems: "center",
-    gap: 8,
-    background: "rgba(0,122,185,0.08)",
-    border: "1px solid rgba(0,122,185,0.18)",
-    borderRadius: 999,
-    padding: "6px 18px",
-    marginBottom: 28,
-    fontFamily: "'JetBrains Mono', monospace",
-    fontSize: 10,
-    letterSpacing: "0.14em",
-    color: "#007AB9",
-    textTransform: "uppercase" as const,
-  },
-  statusDot: {
-    width: 7,
-    height: 7,
-    borderRadius: "50%",
-    background: "#007AB9",
-    display: "inline-block",
-    animation: "dotPulse 2s ease-in-out infinite",
-  },
-  statusText: {
-    letterSpacing: "0.12em",
-  },
-  lindeWordmark: {
-    marginBottom: 20,
-    opacity: 0.9,
-  },
-  lenaWordmark: {
-    fontSize: "clamp(80px, 13vw, 116px)",
-    fontWeight: 700,
-    letterSpacing: "0.22em",
-    lineHeight: 1,
-    margin: "0 0 6px",
-    color: "transparent",
-    background: "linear-gradient(135deg, #d7e9fb 0%, #94c4e8 35%, #007AB9 65%, #eaf4fd 100%)",
-    WebkitBackgroundClip: "text",
-    backgroundClip: "text",
-  },
-  fullName: {
-    fontFamily: "'JetBrains Mono', monospace",
-    fontSize: 11,
-    letterSpacing: "0.28em",
-    color: "rgba(0,47,90,0.45)",
-    textTransform: "uppercase" as const,
-    marginBottom: 32,
-  },
-  taglineWrap: {
-    display: "flex",
-    gap: 32,
-    alignItems: "center",
-    marginBottom: 28,
-    flexWrap: "wrap" as const,
-    justifyContent: "center",
-  },
-  taglineItem: {
-    fontSize: 18,
-    fontWeight: 600,
-    letterSpacing: "0.06em",
-    fontFamily: "'Rajdhani', sans-serif",
-    transition: "color 0.5s ease, transform 0.5s ease",
-    display: "inline-block",
-  },
-  divider: {
-    width: 180,
-    height: 1,
-    background: "linear-gradient(90deg, transparent, rgba(0,122,185,0.35), transparent)",
-    margin: "0 auto 24px",
-  },
-  description: {
-    fontSize: 15,
-    fontWeight: 400,
-    color: "rgba(0,47,90,0.78)",
-    letterSpacing: "0.03em",
-    lineHeight: 1.7,
-    maxWidth: 460,
-    marginBottom: 40,
-    fontFamily: "'Rajdhani', sans-serif",
-  },
-  highlight: {
-    color: "#007AB9",
-    fontWeight: 700,
-  },
-  ctaBtn: {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "15px 52px",
-    borderRadius: 3,
-    border: "none",
-    fontFamily: "'Rajdhani', sans-serif",
-    fontWeight: 700,
-    fontSize: 15,
-    letterSpacing: "0.18em",
-    textTransform: "uppercase" as const,
-    color: "#fff",
-    cursor: "pointer",
-    boxShadow: "0 12px 32px rgba(0,122,185,0.18)",
-    transition: "box-shadow 0.2s ease, transform 0.15s ease, background 0.3s ease",
-    marginBottom: 48,
-  },
-  statsRow: {
-    display: "flex",
-    alignItems: "center",
-    gap: 0,
-    flexWrap: "wrap" as const,
-    justifyContent: "center",
-  },
-  statItem: {
-    display: "flex",
-    flexDirection: "column" as const,
-    alignItems: "center",
-    gap: 4,
-  },
-  statVal: {
-    fontFamily: "'JetBrains Mono', monospace",
-    fontSize: 20,
-    fontWeight: 500,
-    color: "#007AB9",
-  },
-  statLabel: {
-    fontSize: 10,
-    letterSpacing: "0.12em",
-    textTransform: "uppercase" as const,
-    color: "rgba(0,47,90,0.45)",
-    fontFamily: "'JetBrains Mono', monospace",
-  },
-  statDivider: {
-    width: 1,
-    height: 32,
-    background: "rgba(0,47,90,0.12)",
-    margin: "0 28px",
-  },
-  footer: {
-    position: "fixed",
-    bottom: 18,
-    left: "50%",
-    transform: "translateX(-50%)",
-    zIndex: 10,
-    display: "flex",
-    alignItems: "center",
-    gap: 16,
-    fontFamily: "'JetBrains Mono', monospace",
-    fontSize: 9,
-    letterSpacing: "0.12em",
-    color: "rgba(0,47,90,0.3)",
-    textTransform: "uppercase" as const,
-    whiteSpace: "nowrap" as const,
-  },
-};
