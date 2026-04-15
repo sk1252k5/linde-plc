@@ -15,12 +15,18 @@ import Settings from "./pages/Settings";
 import VisionPanel from "./VisionPanel";
 import NuroStack from "./pages/NuroStack";
 import ConsolidatedDashboard from "./pages/ConsolidatedDashboard";
+import VotingPage from "./pages/VotingPage"; // ← NEW
+
 
 export const Routes: RouteObject[] = [
   {
     path: "/",
     children: [
       { index: true, element: <LandingPage /> },
+
+      // ── Voting page — standalone (no sidebar layout) ──────────────────────
+      { path: "voting", element: <VotingPage /> }, // ← NEW
+
       {
         element: <SystemLayout />,
         children: [
@@ -42,7 +48,6 @@ export const Routes: RouteObject[] = [
           { path: "assistant", element: <EosAssistant /> },
           { path: "settings", element: <Settings /> },
           { path: "consolidated-dashboard", element: <ConsolidatedDashboard /> },
-
         ],
       },
     ],

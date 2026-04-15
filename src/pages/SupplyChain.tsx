@@ -15,12 +15,12 @@ import {
   Thermometer, Zap, ArrowRight, ChevronRight, MapPin,
   AlertCircle, BarChart3, Navigation, Package, Brain,
   Shield, CreditCard, Activity, Wifi, Database,
-  RotateCcw, Globe, Droplets,
+  RotateCcw, Globe, Droplets, XCircle,
 } from "lucide-react";
 
 type ScenarioId = "A" | "B" | "C";
-type View = "dashboard" | "voting" | "agent-working" | "simulation" | "decision";
-type Region = "North America" | "South America" | "Europe" | "Africa" | "Asia" | "Australia";
+type View = "dashboard" | "telemetry-connect" | "agent-working" | "simulation" | "decision";
+type Region = "Europe" | "North America" | "South America" | "Africa" | "Asia" | "Australia";
 
 interface Customer {
   id: string; name: string; industry: string; location: string;
@@ -82,6 +82,15 @@ interface RegionalTank {
 
 // ─── Regional Tank Data ───────────────────────────────────────────────────────
 const REGIONAL_TANKS: Record<Region, RegionalTank[]> = {
+  "Europe": [
+    { tankId: "EU-T001", customerName: "Helios Steel Works", location: "Scunthorpe, UK", fillLevel: 10, gas: "N₂", hoursToEmpty: 2.1, dailyUsage: 38 },
+    { tankId: "EU-T002", customerName: "BioPharm Solutions", location: "Grimsby, UK", fillLevel: 25, gas: "N₂", hoursToEmpty: 11.1, dailyUsage: 9 },
+    { tankId: "EU-T003", customerName: "CryoMed Hospital Trust", location: "Hull, UK", fillLevel: 50, gas: "N₂", hoursToEmpty: 28.6, dailyUsage: 3.5 },
+    { tankId: "EU-T004", customerName: "Frankfurt Auto GmbH", location: "Frankfurt, Germany", fillLevel: 78, gas: "Ar", hoursToEmpty: 58.4, dailyUsage: 21 },
+    { tankId: "EU-T005", customerName: "Paris MedLabs", location: "Paris, France", fillLevel: 42, gas: "O₂", hoursToEmpty: 19.7, dailyUsage: 15 },
+    { tankId: "EU-T006", customerName: "Milan Textile SpA", location: "Milan, Italy", fillLevel: 67, gas: "N₂", hoursToEmpty: 41.3, dailyUsage: 11 },
+    { tankId: "EU-T007", customerName: "Rotterdam Port Logistics", location: "Rotterdam, Netherlands", fillLevel: 29, gas: "H₂", hoursToEmpty: 8.6, dailyUsage: 44 },
+  ],
   "North America": [
     { tankId: "NA-T001", customerName: "Texas Steel Corp", location: "Houston, TX", fillLevel: 72, gas: "N₂", hoursToEmpty: 48.2, dailyUsage: 42 },
     { tankId: "NA-T002", customerName: "Boston BioTech", location: "Boston, MA", fillLevel: 28, gas: "O₂", hoursToEmpty: 9.1, dailyUsage: 18 },
@@ -96,15 +105,6 @@ const REGIONAL_TANKS: Record<Region, RegionalTank[]> = {
     { tankId: "SA-T003", customerName: "Lima Mining Co", location: "Lima, Peru", fillLevel: 21, gas: "Ar", hoursToEmpty: 7.9, dailyUsage: 31 },
     { tankId: "SA-T004", customerName: "Bogotá Hospital Trust", location: "Bogotá, Colombia", fillLevel: 64, gas: "N₂", hoursToEmpty: 38.2, dailyUsage: 8 },
     { tankId: "SA-T005", customerName: "Santiago Chemical Works", location: "Santiago, Chile", fillLevel: 33, gas: "CO₂", hoursToEmpty: 12.4, dailyUsage: 26 },
-  ],
-  "Europe": [
-    { tankId: "EU-T001", customerName: "Helios Steel Works", location: "Scunthorpe, UK", fillLevel: 10, gas: "N₂", hoursToEmpty: 2.1, dailyUsage: 38 },
-    { tankId: "EU-T002", customerName: "BioPharm Solutions", location: "Grimsby, UK", fillLevel: 25, gas: "N₂", hoursToEmpty: 11.1, dailyUsage: 9 },
-    { tankId: "EU-T003", customerName: "CryoMed Hospital Trust", location: "Hull, UK", fillLevel: 50, gas: "N₂", hoursToEmpty: 28.6, dailyUsage: 3.5 },
-    { tankId: "EU-T004", customerName: "Frankfurt Auto GmbH", location: "Frankfurt, Germany", fillLevel: 78, gas: "Ar", hoursToEmpty: 58.4, dailyUsage: 21 },
-    { tankId: "EU-T005", customerName: "Paris MedLabs", location: "Paris, France", fillLevel: 42, gas: "O₂", hoursToEmpty: 19.7, dailyUsage: 15 },
-    { tankId: "EU-T006", customerName: "Milan Textile SpA", location: "Milan, Italy", fillLevel: 67, gas: "N₂", hoursToEmpty: 41.3, dailyUsage: 11 },
-    { tankId: "EU-T007", customerName: "Rotterdam Port Logistics", location: "Rotterdam, Netherlands", fillLevel: 29, gas: "H₂", hoursToEmpty: 8.6, dailyUsage: 44 },
   ],
   "Africa": [
     { tankId: "AF-T001", customerName: "Johannesburg Steel", location: "Johannesburg, South Africa", fillLevel: 53, gas: "N₂", hoursToEmpty: 28.1, dailyUsage: 33 },
@@ -147,7 +147,7 @@ const SCENARIOS: Record<ScenarioId, Scenario> = {
         location: "Scunthorpe, North Lincolnshire", gas: "Nitrogen (N₂)",
         tankCapacity: 800, currentLevel: 10, dailyUsage: 38, threshold: 10,
         priority: "CRITICAL", hoursToEmpty: 2.1, distanceFromDepot: 12,
-        deliveryRequired: 72, annualRevenue: 4.2, contractValue: 18.6,
+        deliveryRequired: 45, annualRevenue: 4.2, contractValue: 18.6,
         creditScore: 720, paymentDays: 28, contractType: "Take-or-Pay",
         penaltyPerHour: 14.2, lastDelivery: "48 hrs ago",
         lastPaymentDate: "01 Apr 2026", lastPaymentAmount: 142000,
@@ -158,7 +158,7 @@ const SCENARIOS: Record<ScenarioId, Scenario> = {
         location: "Grimsby, Lincolnshire", gas: "Nitrogen (N₂)",
         tankCapacity: 400, currentLevel: 25, dailyUsage: 9, threshold: 25,
         priority: "HIGH", hoursToEmpty: 11.1, distanceFromDepot: 28,
-        deliveryRequired: 60, annualRevenue: 2.8, contractValue: 9.4,
+        deliveryRequired: 35, annualRevenue: 2.8, contractValue: 9.4,
         creditScore: 810, paymentDays: 21, contractType: "Long-Term",
         penaltyPerHour: 8.6, lastDelivery: "3 days ago",
         lastPaymentDate: "28 Mar 2026", lastPaymentAmount: 86000,
@@ -169,7 +169,7 @@ const SCENARIOS: Record<ScenarioId, Scenario> = {
         location: "Hull, East Yorkshire", gas: "Nitrogen (N₂)",
         tankCapacity: 200, currentLevel: 50, dailyUsage: 3.5, threshold: 50,
         priority: "MEDIUM", hoursToEmpty: 28.6, distanceFromDepot: 41,
-        deliveryRequired: 30, annualRevenue: 1.9, contractValue: 6.1,
+        deliveryRequired: 20, annualRevenue: 1.9, contractValue: 6.1,
         creditScore: 680, paymentDays: 30, contractType: "Long-Term",
         penaltyPerHour: 22.0, lastDelivery: "5 days ago",
         lastPaymentDate: "25 Mar 2026", lastPaymentAmount: 61000,
@@ -276,7 +276,7 @@ const SCENARIOS: Record<ScenarioId, Scenario> = {
         location: "Grimsby, Lincolnshire", gas: "Nitrogen (N₂)",
         tankCapacity: 400, currentLevel: 10, dailyUsage: 9, threshold: 10,
         priority: "CRITICAL", hoursToEmpty: 4.4, distanceFromDepot: 28,
-        deliveryRequired: 55, annualRevenue: 2.8, contractValue: 9.4,
+        deliveryRequired: 40, annualRevenue: 2.8, contractValue: 9.4,
         creditScore: 810, paymentDays: 21, contractType: "Long-Term",
         penaltyPerHour: 8.6, lastDelivery: "5 days ago",
         lastPaymentDate: "28 Mar 2026", lastPaymentAmount: 86000,
@@ -287,7 +287,7 @@ const SCENARIOS: Record<ScenarioId, Scenario> = {
         location: "Hull, East Yorkshire", gas: "Nitrogen (N₂)",
         tankCapacity: 200, currentLevel: 25, dailyUsage: 3.5, threshold: 25,
         priority: "HIGH", hoursToEmpty: 14.3, distanceFromDepot: 67,
-        deliveryRequired: 15, annualRevenue: 1.9, contractValue: 6.1,
+        deliveryRequired: 30, annualRevenue: 1.9, contractValue: 6.1,
         creditScore: 680, paymentDays: 30, contractType: "Long-Term",
         penaltyPerHour: 22.0, lastDelivery: "7 days ago",
         lastPaymentDate: "25 Mar 2026", lastPaymentAmount: 61000,
@@ -326,7 +326,7 @@ function buildAgentSteps(s: Scenario): AgentStep[] {
         { label: c[1].name, value: `${c[1].currentLevel}% · ${c[1].hoursToEmpty}h to empty` },
         { label: c[2].name, value: `${c[2].currentLevel}% · ${c[2].hoursToEmpty}h to empty` },
       ],
-      durationMs: 1400,
+      durationMs: 6000,
     },
     {
       agentName: "Demand & Allocation Agent",
@@ -338,7 +338,7 @@ function buildAgentSteps(s: Scenario): AgentStep[] {
         { label: "Inventory available", value: `${s.inventoryLevel} m³ in depot` },
         { label: "Allocation balanced", value: `${c.reduce((a, x) => a + x.deliveryRequired, 0)} m³ / ${s.truckCapacity} m³ truck` },
       ],
-      durationMs: 1500,
+      durationMs: 5000,
     },
     {
       agentName: "Pricing Optimisation Agent",
@@ -350,7 +350,7 @@ function buildAgentSteps(s: Scenario): AgentStep[] {
         { label: "Emergency surcharge", value: c[0].priority === "CRITICAL" ? "£320 applied" : "None" },
         { label: "Net margin", value: "18.4% optimised" },
       ],
-      durationMs: 1300,
+      durationMs: 7000,
     },
     {
       agentName: "Plant & Logistics Allocation Agent",
@@ -362,7 +362,7 @@ function buildAgentSteps(s: Scenario): AgentStep[] {
         { label: "Truck capacity", value: `${s.truckCapacity} m³ liquid N₂` },
         { label: "Depot ready time", value: "T+00:12 from now" },
       ],
-      durationMs: 1400,
+      durationMs: 5000,
     },
     {
       agentName: "Route Optimisation Agent",
@@ -374,7 +374,7 @@ function buildAgentSteps(s: Scenario): AgentStep[] {
         { label: "Optimal route", value: `${s.routeOptions[0].totalKm} km · ${s.routeOptions[0].totalTime} hrs` },
         { label: "All SLAs met?", value: "YES — zero breach risk" },
       ],
-      durationMs: 1800,
+      durationMs: 8000,
     },
     {
       agentName: "Risk Agent",
@@ -386,7 +386,7 @@ function buildAgentSteps(s: Scenario): AgentStep[] {
         { label: "Contract at risk", value: `£${c[0].contractValue}M — ${c[0].contractType}` },
         { label: "Credit score", value: `${c[0].creditScore} · ${c[0].paymentDays} day terms` },
       ],
-      durationMs: 1600,
+      durationMs: 6000,
     },
     {
       agentName: "LENA Orchestrator",
@@ -398,15 +398,15 @@ function buildAgentSteps(s: Scenario): AgentStep[] {
         { label: "Penalty averted", value: `£${(c[0].penaltyPerHour * 8).toFixed(0)}K estimated` },
         { label: "Decision confidence", value: "98.7% · LOW risk" },
       ],
-      durationMs: 1400,
+      durationMs: 5000,
     },
   ];
 }
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
 const SC_NAV = [
-  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { id: "control-tower", label: "Control Tower", icon: Radio },
+  { id: "dashboard", label: "Control Tower", icon: LayoutDashboard },
+  { id: "master-agent", label: "Master Agent", icon: Brain },
   { id: "routing", label: "Routing Agent", icon: GitBranch },
   { id: "pipeline", label: "Pipeline Agent", icon: TrendingUp },
   { id: "demand", label: "Demand Agent", icon: BarChart3 },
@@ -435,10 +435,11 @@ function SupplyChainSidebar({ activeView, onNavigate, scenarioId }: {
               <SidebarMenu className="gap-0.5">
                 {SC_NAV.map(item => {
                   const isActive =
-                    (item.id === "dashboard" && (activeView === "dashboard" || activeView === "voting")) ||
-                    (item.id === "routing" && (activeView === "agent-working" || activeView === "simulation")) ||
+                    (item.id === "dashboard" && (activeView === "dashboard" || activeView === "telemetry-connect")) ||
+                    (item.id === "master-agent" && activeView === "agent-working") ||
+                    (item.id === "routing" && activeView === "simulation") ||
                     (item.id === "decision" && activeView === "decision");
-                  const isWorking = item.id === "routing" && activeView === "agent-working";
+                  const isWorking = item.id === "master-agent" && activeView === "agent-working";
                   return (
                     <SidebarMenuItem key={item.id}>
                       <SidebarMenuButton
@@ -451,6 +452,7 @@ function SupplyChainSidebar({ activeView, onNavigate, scenarioId }: {
                           if (item.id === "dashboard") onNavigate("dashboard");
                           if (item.id === "decision" && scenarioId) onNavigate("decision");
                           if (item.id === "routing" && scenarioId) onNavigate("simulation");
+                          if (item.id === "master-agent" && scenarioId) onNavigate("agent-working");
                         }}
                       >
                         <item.icon className={cn("h-4 w-4 shrink-0 mr-3", isActive ? "opacity-100 text-primary" : "opacity-60")} />
@@ -511,7 +513,7 @@ function KpiCard({ label, value, sub, color, border, Icon }: {
 }
 
 // ─── Tank Telemetry Tabs ──────────────────────────────────────────────────────
-const REGIONS: Region[] = ["North America", "South America", "Europe", "Africa", "Asia", "Australia"];
+const REGIONS: Region[] = ["Europe", "North America", "South America", "Africa", "Asia", "Australia"];
 
 function TankCard({ tank }: { tank: RegionalTank }) {
   const status = tank.fillLevel >= 50 ? "safe" : tank.fillLevel >= 30 ? "warning" : "critical";
@@ -543,8 +545,6 @@ function TankCard({ tank }: { tank: RegionalTank }) {
           {status === "safe" ? "Safe" : status === "warning" ? "Warning" : "Critical"}
         </span>
       </div>
-
-      {/* Fill Level Bar */}
       <div>
         <div className="flex justify-between text-xs mb-1.5">
           <span className="text-muted-foreground">Fill Level · {tank.gas}</span>
@@ -565,8 +565,6 @@ function TankCard({ tank }: { tank: RegionalTank }) {
           />
         </div>
       </div>
-
-      {/* Bottom stats */}
       <div className="flex items-center justify-between pt-1 border-t border-dashed border-muted-foreground/20">
         <div className="flex items-center gap-1.5">
           <Clock className="h-3 w-3 text-muted-foreground" />
@@ -584,7 +582,6 @@ function TankCard({ tank }: { tank: RegionalTank }) {
 
 function TankTelemetrySection() {
   const [activeRegion, setActiveRegion] = useState<Region>("Europe");
-
   const tanks = REGIONAL_TANKS[activeRegion];
   const criticalCount = tanks.filter(t => t.fillLevel < 30).length;
   const warningCount = tanks.filter(t => t.fillLevel >= 30 && t.fillLevel < 50).length;
@@ -610,8 +607,6 @@ function TankTelemetrySection() {
           <span className="text-muted-foreground">{tanks.length} tanks monitored</span>
         </div>
       </div>
-
-      {/* Tabs */}
       <div className="flex items-center gap-1 mb-5 border-b border-border pb-0">
         {REGIONS.map(region => (
           <button
@@ -626,15 +621,12 @@ function TankTelemetrySection() {
             )}
           >
             {region}
-            {/* Critical indicator dot on tab */}
             {REGIONAL_TANKS[region].some(t => t.fillLevel < 30) && (
               <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-red-500" />
             )}
           </button>
         ))}
       </div>
-
-      {/* Tank grid */}
       <div className="grid grid-cols-3 gap-3">
         {tanks.map(tank => (
           <TankCard key={tank.tankId} tank={tank} />
@@ -774,7 +766,6 @@ function DashboardView({ onStartSimulation }: { onStartSimulation: () => void })
         </div>
       </div>
 
-      {/* Tank Telemetry Tabs Section */}
       <TankTelemetrySection />
 
       <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20 rounded-xl p-6 flex items-center justify-between">
@@ -783,107 +774,177 @@ function DashboardView({ onStartSimulation }: { onStartSimulation: () => void })
             <Zap className="h-4 w-4 text-primary" />
             <span className="text-xs font-mono font-semibold uppercase tracking-wider text-primary">LENA Agent — Ready</span>
           </div>
-          <h3 className="font-semibold">Run Supply Chain Simulation</h3>
+          <h3 className="font-semibold">Run Supply Chain Optimization</h3>
           <p className="text-sm text-muted-foreground mt-1">
-            Audience selects a disruption scenario. LENA analyses customer telemetry, prioritises deliveries and recommends the optimal dispatch route.
+            LENA analyses customer telemetry, prioritises deliveries and recommends the optimal dispatch route.
           </p>
         </div>
         <Button className="ml-6 shrink-0 gap-2" size="lg" onClick={onStartSimulation}>
-          Launch Simulation <ArrowRight className="h-4 w-4" />
+          Launch <ArrowRight className="h-4 w-4" />
         </Button>
       </div>
     </div>
   );
 }
 
-// ─── Voting View ──────────────────────────────────────────────────────────────
-function VotingView({ onVote }: { onVote: (s: ScenarioId) => void }) {
-  const [votes, setVotes] = useState<Record<ScenarioId, number>>({ A: 0, B: 0, C: 0 });
-  const [myVote, setMyVote] = useState<ScenarioId | null>(null);
-  const [locked, setLocked] = useState(false);
-  const [countdown, setCountdown] = useState(30);
-  const total = votes.A + votes.B + votes.C;
+// ─── Telemetry Connect View ───────────────────────────────────────────────────
+// Replaces the voting view. Shows 3 customer cards, each filling to 100% sequentially (5s each).
+function TelemetryConnectView({ scenario, onComplete }: { scenario: Scenario; onComplete: () => void }) {
+  const customers = scenario.customers;
+  // progress[0..2] each 0..100
+  const [progress, setProgress] = useState<number[]>([0, 0, 0]);
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [allDone, setAllDone] = useState(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    if (locked) return;
-    const iv = setInterval(() => {
-      setVotes(v => ({ A: v.A + Math.floor(Math.random() * 4), B: v.B + Math.floor(Math.random() * 3), C: v.C + Math.floor(Math.random() * 3) }));
-    }, 800);
-    return () => clearInterval(iv);
-  }, [locked]);
+    // Animate each customer bar one by one, 5s each = increment by ~1 every 50ms
+    let current = 0;
+
+    function animateCustomer(idx: number) {
+      if (idx >= customers.length) {
+        setAllDone(true);
+        return;
+      }
+      setActiveIdx(idx);
+      let val = 0;
+      intervalRef.current = setInterval(() => {
+        val += 1;
+        setProgress(prev => {
+          const next = [...prev];
+          next[idx] = val;
+          return next;
+        });
+        if (val >= 100) {
+          clearInterval(intervalRef.current!);
+          setTimeout(() => animateCustomer(idx + 1), 300);
+        }
+      }, 50); // 50ms * 100 steps = 5s
+    }
+
+    animateCustomer(0);
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, []);
 
   useEffect(() => {
-    if (locked) return;
-    if (countdown <= 0) { lockIn(); return; }
-    const t = setInterval(() => setCountdown(c => c - 1), 1000);
-    return () => clearInterval(t);
-  }, [countdown, locked]);
-
-  function castVote(s: ScenarioId) { if (myVote || locked) return; setMyVote(s); setVotes(v => ({ ...v, [s]: v[s] + 1 })); }
-  function lockIn() {
-    setLocked(true);
-    const winner = (Object.entries(votes).sort((a, b) => b[1] - a[1])[0][0]) as ScenarioId;
-    setTimeout(() => onVote(winner), 1800);
-  }
-
-  const meta: Record<ScenarioId, { label: string; icon: typeof AlertTriangle; color: string; desc: string; risk: string }> = {
-    A: { label: "Facility Shutdown", icon: AlertTriangle, color: "text-red-500", desc: "Helios Steel — critical nitrogen shortage. Plant at 10%.", risk: "£29.8K/hr penalty exposure" },
-    B: { label: "Demand Spike", icon: TrendingUp, color: "text-orange-500", desc: "BioPharm emergency surge — two customers simultaneously critical.", risk: "£22K/hr penalty · 2 SLAs at risk" },
-    C: { label: "Weather Disruption", icon: Navigation, color: "text-blue-500", desc: "A63 flooding — Hull route blocked. Hospital rerouting required.", risk: "Road closed · +26 km detour" },
-  };
+    if (allDone) {
+      const t = setTimeout(() => onComplete(), 600);
+      return () => clearTimeout(t);
+    }
+  }, [allDone]);
 
   return (
     <div className="max-w-2xl mx-auto py-12 space-y-8">
       <div className="text-center">
         <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-1.5 rounded-full text-xs font-mono font-semibold uppercase tracking-wider mb-4">
           <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-          Live Audience Vote
+          Connecting to Customers Telemetry Data
         </div>
-        <h2 className="text-2xl font-bold">Choose Today's Disruption Scenario</h2>
-        <p className="text-muted-foreground mt-2 text-sm">The scenario with the most votes will be simulated live by LENA</p>
-        {!locked && <div className="mt-3 text-4xl font-mono font-bold text-primary">{countdown}s</div>}
-        {locked && <div className="mt-3 text-sm text-muted-foreground font-mono">Tallying… launching LENA agents</div>}
+        <h2 className="text-2xl font-bold">Establishing Live Sensor Connections</h2>
+        <p className="text-muted-foreground mt-2 text-sm">Reading IoT tank sensors from customer sites</p>
       </div>
-      <div className="space-y-3">
-        {(["A", "B", "C"] as ScenarioId[]).map(sid => {
-          const m = meta[sid];
-          const pct = total > 0 ? Math.round((votes[sid] / total) * 100) : 0;
-          const isWinning = votes[sid] === Math.max(votes.A, votes.B, votes.C) && total > 0;
+
+      <div className="space-y-4">
+        {customers.map((customer, idx) => {
+          const isActive = idx === activeIdx && !allDone && progress[idx] < 100;
+          const isDone = progress[idx] >= 100;
+          const isPending = idx > activeIdx && progress[idx] === 0;
+          const statusColor = customer.priority === "CRITICAL"
+          ? "border-red-300 bg-red-50/50"
+          : customer.priority === "HIGH"
+          ? "border-orange-300 bg-orange-50/50"
+          : "border-border bg-card";
           return (
-            <div key={sid}
-              className={cn("border rounded-xl p-4 cursor-pointer transition-all",
-                myVote === sid ? "border-primary bg-primary/5" : "border-border hover:border-primary/50 hover:bg-muted/40",
-                isWinning && locked && "border-primary ring-2 ring-primary/20"
+            <div
+              key={customer.id}
+              className={cn(
+                "rounded-xl border p-5 transition-all duration-500",
+                statusColor,
+                isPending && "opacity-40",
+                isDone && "border-emerald-300 bg-emerald-50/30",
               )}
-              onClick={() => castVote(sid)}>
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-start gap-3">
-                  <m.icon className={cn("h-5 w-5 mt-0.5 shrink-0", m.color)} />
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <PriorityBadge priority={customer.priority} />
+                    {isActive && (
+                      <span className="text-[10px] font-mono text-primary animate-pulse font-semibold">Connecting…</span>
+                    )}
+                    {isDone && (
+                      <span className="text-[10px] font-mono text-emerald-600 font-semibold flex items-center gap-1">
+                        <CheckCircle2 className="h-3 w-3" /> Connected
+                      </span>
+                    )}
+                    {isPending && (
+                      <span className="text-[10px] font-mono text-muted-foreground">Pending…</span>
+                    )}
+                  </div>
+                  <h3 className="font-semibold text-base">{customer.name}</h3>
+                  <p className="text-xs text-muted-foreground">{customer.location}</p>
+                </div>
+                <div className="text-right">
+                  <div className={cn("text-2xl font-bold font-mono", {
+                    "text-red-600": customer.hoursToEmpty < 4,
+                    "text-orange-500": customer.hoursToEmpty >= 4 && customer.hoursToEmpty < 12,
+                    "text-emerald-600": customer.hoursToEmpty >= 12,
+                  })}>
+                    {customer.hoursToEmpty}h
+                  </div>
+                  <div className="text-[10px] text-muted-foreground">to empty</div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs mb-1">
+                  <span className="text-muted-foreground">Telemetry sync · {customer.gas}</span>
+                  <span className={cn("font-mono font-bold", {
+                    "text-primary": isActive,
+                    "text-emerald-600": isDone,
+                    "text-muted-foreground": isPending,
+                  })}>{progress[idx]}%</span>
+                </div>
+                <div className="h-3 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className={cn("h-full rounded-full transition-all duration-100", {
+                      "bg-primary": isActive,
+                      "bg-emerald-500": isDone,
+                      "bg-muted-foreground/20": isPending,
+                    })}
+                    style={{ width: `${progress[idx]}%` }}
+                  />
+                </div>
+              </div>
+
+              {isDone && (
+                <div className="mt-3 grid grid-cols-3 gap-3 text-xs pt-3 border-t border-emerald-200">
                   <div>
-                    <span className="font-semibold text-sm">{m.label}</span>
-                    <p className="text-xs text-muted-foreground mt-0.5">{m.desc}</p>
-                    <p className="text-xs text-red-600 font-semibold mt-1">{m.risk}</p>
+                    <span className="text-muted-foreground">Tank level</span>
+                    <p className="font-semibold font-mono">{customer.currentLevel}%</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Daily usage</span>
+                    <p className="font-semibold font-mono">{customer.dailyUsage} m³</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Industry</span>
+                    <p className="font-semibold">{customer.industry}</p>
                   </div>
                 </div>
-                <div className="text-right shrink-0 ml-4">
-                  <span className="font-mono font-bold text-lg">{pct}%</span>
-                  <p className="text-[10px] text-muted-foreground">{votes[sid]} votes</p>
-                </div>
-              </div>
-              <div className="h-2 bg-muted rounded-full overflow-hidden">
-                <div className={cn("h-full rounded-full transition-all duration-300", { "bg-red-500": sid === "A", "bg-orange-500": sid === "B", "bg-blue-500": sid === "C" })}
-                  style={{ width: `${pct}%` }} />
-              </div>
+              )}
             </div>
           );
         })}
       </div>
-      <div className="text-center">
-        <Button variant="outline" onClick={lockIn} disabled={locked}>
-          {locked ? "Tallying votes…" : "Lock In Results (Presenter)"}
-        </Button>
-        <p className="text-xs text-muted-foreground mt-2">{total} audience votes counted</p>
-      </div>
+
+      {allDone && (
+        <div className="text-center">
+          <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 px-4 py-2 rounded-full text-sm font-semibold animate-pulse">
+            <CheckCircle2 className="h-4 w-4" />
+            All sensors connected · Launching LENA agents…
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -934,29 +995,6 @@ function AgentWorkingView({ scenario, onComplete }: { scenario: Scenario; onComp
 
   return (
     <div className="space-y-6">
-      <div className={cn("rounded-xl border-2 p-5", {
-        "border-red-400 bg-red-50/50 dark:bg-red-950/20": scenario.id === "A",
-        "border-orange-400 bg-orange-50/50 dark:bg-orange-950/20": scenario.id === "B",
-        "border-blue-400 bg-blue-50/50 dark:bg-blue-950/20": scenario.id === "C",
-      })}>
-        <div className="flex items-center justify-between">
-          <div>
-            <span className={cn("text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded", {
-              "bg-red-100 text-red-700": scenario.id === "A",
-              "bg-orange-100 text-orange-700": scenario.id === "B",
-              "bg-blue-100 text-blue-700": scenario.id === "C",
-            })}>Scenario {scenario.id} — Audience Selected</span>
-            <h2 className="text-xl font-bold mt-1">{scenario.label}</h2>
-            <p className="text-sm text-muted-foreground">{scenario.description}</p>
-          </div>
-          <div className="text-right">
-            <p className="text-xs text-muted-foreground">Depot</p>
-            <p className="font-semibold text-sm">{scenario.depotLocation}</p>
-            <p className="text-xs text-muted-foreground mt-1">Truck: <span className="font-mono font-bold">{scenario.truckId}</span></p>
-          </div>
-        </div>
-      </div>
-
       <div className="grid grid-cols-2 gap-4">
         {/* Agent pipeline */}
         <div className="bg-card rounded-xl border p-5 space-y-3">
@@ -991,14 +1029,7 @@ function AgentWorkingView({ scenario, onComplete }: { scenario: Scenario; onComp
                     <div className="h-1 bg-muted rounded-full overflow-hidden ml-7">
                       <div className="h-full bg-primary rounded-full transition-all duration-100" style={{ width: `${stepProgress}%` }} />
                     </div>
-                    <div className="mt-2 space-y-1 ml-7">
-                      {step.dataPoints.map((dp, di) => (
-                        <div key={di} className="flex justify-between text-[10px]">
-                          <span className="text-muted-foreground">{dp.label}</span>
-                          <span className="font-mono font-semibold text-foreground">{dp.value}</span>
-                        </div>
-                      ))}
-                    </div>
+                    {/* Data points hidden during processing — shown only when done */}
                   </>
                 )}
                 {isDone && (
@@ -1096,11 +1127,10 @@ function TerminalIcon({ className }: { className?: string }) {
   return <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="4 17 10 11 4 5" /><line x1="12" y1="19" x2="20" y2="19" /></svg>;
 }
 
-// ─── Customer Card (updated) ──────────────────────────────────────────────────
+// ─── Customer Card ────────────────────────────────────────────────────────────
 function CustomerCard({ c, rank }: { c: Customer; rank: number }) {
   const urgency = c.hoursToEmpty < 4 ? "IMMINENT" : c.hoursToEmpty < 12 ? "URGENT" : "STABLE";
   const deliveryPct = Math.round((c.deliveryRequired / 100) * 100);
-  const creditColor = c.creditScore >= 750 ? "text-emerald-600" : c.creditScore >= 650 ? "text-blue-600" : "text-orange-600";
   const creditBg = c.creditScore >= 750 ? "bg-emerald-100 text-emerald-700" : c.creditScore >= 650 ? "bg-blue-100 text-blue-700" : "bg-orange-100 text-orange-700";
 
   return (
@@ -1112,7 +1142,7 @@ function CustomerCard({ c, rank }: { c: Customer; rank: number }) {
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-[10px] font-mono font-bold text-muted-foreground">STOP #{rank}</span>
+            <span className="text-[10px] font-mono font-bold text-muted-foreground"></span>
             <PriorityBadge priority={c.priority} />
           </div>
           <h3 className="font-semibold">{c.name}</h3>
@@ -1175,15 +1205,19 @@ function CustomerCard({ c, rank }: { c: Customer; rank: number }) {
   );
 }
 
-// ─── Demand Allocation Pie (SVG-based) ────────────────────────────────────────
+// ─── Demand Allocation Pie ────────────────────────────────────────────────────
 function DemandAllocationPie({ customers, truckCapacity }: { customers: Customer[]; truckCapacity: number }) {
   const colors = ["#ef4444", "#f97316", "#3b82f6"];
-  const remainder = Math.max(0, truckCapacity - customers.reduce((s, c) => s + c.deliveryRequired, 0));
+  const rawTotal = customers.reduce((s, c) => s + c.deliveryRequired, 0);
+  const normalised = customers.map(c => ({
+    ...c,
+    normDelivery: Math.round((c.deliveryRequired / rawTotal) * truckCapacity),
+  }));
+  const normSum = normalised.reduce((s, c) => s + c.normDelivery, 0);
+  if (normalised.length > 0) normalised[normalised.length - 1].normDelivery += truckCapacity - normSum;
+
   const total = truckCapacity;
-  const segments = [
-    ...customers.map((c, i) => ({ label: c.name.split(" ")[0], value: c.deliveryRequired, color: colors[i] })),
-    ...(remainder > 0 ? [{ label: "Unallocated", value: remainder, color: "#e5e7eb" }] : []),
-  ];
+  const segments = normalised.map((c, i) => ({ label: c.name.split(" ")[0], value: c.normDelivery, color: colors[i] }));
 
   let cumAngle = -90;
   const cx = 80, cy = 80, r = 65, inner = 40;
@@ -1209,7 +1243,7 @@ function DemandAllocationPie({ customers, truckCapacity }: { customers: Customer
   return (
     <div className="bg-card rounded-xl border p-5">
       <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-4 flex items-center gap-2">
-        <Droplets className="h-4 w-4 text-primary" /> Demand Allocation — {truckCapacity} m³ Truck
+        <Droplets className="h-4 w-4 text-primary" /> Demand Allocation — {truckCapacity} m³ Truck (100%)
       </h3>
       <div className="flex items-center gap-6">
         <svg width="160" height="160" viewBox="0 0 160 160">
@@ -1217,9 +1251,9 @@ function DemandAllocationPie({ customers, truckCapacity }: { customers: Customer
             <path key={i} d={arc.path} fill={arc.color} stroke="white" strokeWidth="2" />
           ))}
           <text x="80" y="76" textAnchor="middle" className="font-bold" style={{ fontSize: 18, fill: "currentColor", fontWeight: 700 }}>
-            {customers.reduce((s, c) => s + c.deliveryRequired, 0)}
+            {truckCapacity}
           </text>
-          <text x="80" y="90" textAnchor="middle" style={{ fontSize: 9, fill: "#6b7280" }}>m³ allocated</text>
+          <text x="80" y="90" textAnchor="middle" style={{ fontSize: 9, fill: "#6b7280" }}>m³ total</text>
         </svg>
         <div className="flex-1 space-y-3">
           {arcs.map((arc, i) => (
@@ -1236,17 +1270,22 @@ function DemandAllocationPie({ customers, truckCapacity }: { customers: Customer
               </div>
             </div>
           ))}
+          <div className="pt-1 border-t text-[10px] text-emerald-600 font-semibold flex items-center gap-1">
+            <CheckCircle2 className="h-3 w-3" /> Truck fully allocated — 100%
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-// ─── Simulation View (updated) ────────────────────────────────────────────────
+// ─── Simulation View ──────────────────────────────────────────────────────────
 function SimulationView({ scenario, onDecision }: { scenario: Scenario; onDecision: () => void }) {
   const customers = [...scenario.customers].sort((a, b) => a.hoursToEmpty - b.hoursToEmpty);
-  const totalDelivery = scenario.customers.reduce((s, c) => s + c.deliveryRequired, 0);
   const inventoryStatus = scenario.inventoryLevel >= scenario.expectedDemand7Days ? "sufficient" : "low";
+  const [selectedRouteId, setSelectedRouteId] = useState<string>(
+    scenario.routeOptions.find(r => r.recommended)?.id ?? scenario.routeOptions[0].id
+  );
 
   const tagStyles: Record<string, string> = {
     "LENA Recommended": "bg-primary/10 text-primary border border-primary/30",
@@ -1257,30 +1296,15 @@ function SimulationView({ scenario, onDecision }: { scenario: Scenario; onDecisi
 
   return (
     <div className="space-y-6">
-      <div className={cn("rounded-xl border-2 p-5", {
-        "border-red-400 bg-red-50/50": scenario.id === "A",
-        "border-orange-400 bg-orange-50/50": scenario.id === "B",
-        "border-blue-400 bg-blue-50/50": scenario.id === "C",
-      })}>
-        <div className="flex items-center justify-between">
-          <div>
-            <span className={cn("text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded", {
-              "bg-red-100 text-red-700": scenario.id === "A",
-              "bg-orange-100 text-orange-700": scenario.id === "B",
-              "bg-blue-100 text-blue-700": scenario.id === "C",
-            })}>Scenario {scenario.id} — Audience Selected</span>
-            <h2 className="text-xl font-bold mt-1">{scenario.label}</h2>
-            <p className="text-sm text-muted-foreground">{scenario.description}</p>
-          </div>
-          <div className="text-right">
-            <p className="text-xs text-muted-foreground">Assigned truck</p>
-            <p className="font-mono font-bold text-lg">{scenario.truckId}</p>
-            <p className="text-xs text-muted-foreground">{scenario.depotLocation}</p>
-          </div>
+      <div>
+        <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+          <Thermometer className="h-4 w-4 text-primary" /> Customer Telemetry — Priority by Time-to-Empty
+        </h3>
+        <div className="grid grid-cols-3 gap-4">
+          {customers.map((c, i) => <CustomerCard key={c.id} c={c} rank={i + 1} />)}
         </div>
       </div>
 
-      {/* Inventory / Demand summary cards replacing old scenario box */}
       <div className="grid grid-cols-4 gap-3">
         <div className="bg-card rounded-xl border p-4">
           <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Gas Type</p>
@@ -1306,67 +1330,63 @@ function SimulationView({ scenario, onDecision }: { scenario: Scenario; onDecisi
         </div>
       </div>
 
-      <div className="bg-emerald-50 border border-emerald-300 rounded-xl p-4 flex items-start gap-3">
-        <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
-        <div>
-          <span className="font-semibold text-emerald-700 text-sm">LENA — Analysis complete. Route optimised.</span>
-          <p className="text-sm text-emerald-700 mt-1">{scenario.lenadecision}</p>
-        </div>
-      </div>
-
-      {/* Truck allocation as pie chart */}
       <DemandAllocationPie customers={customers} truckCapacity={scenario.truckCapacity} />
-
-      <div>
-        <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
-          <Thermometer className="h-4 w-4 text-primary" /> Customer Telemetry — Priority by Time-to-Empty
-        </h3>
-        <div className="grid grid-cols-3 gap-4">
-          {customers.map((c, i) => <CustomerCard key={c.id} c={c} rank={i + 1} />)}
-        </div>
-      </div>
 
       <div>
         <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
           <Navigation className="h-4 w-4 text-primary" /> Route Options Evaluated
         </h3>
         <div className="space-y-3">
-          {scenario.routeOptions.map(r => (
-            <div key={r.id} className={cn("rounded-xl border p-4 flex items-start gap-4", r.recommended && "border-primary bg-primary/5")}>
-              <div className="shrink-0 mt-0.5">
-                {r.recommended ? <CheckCircle2 className="h-5 w-5 text-primary" /> : <div className="h-5 w-5 rounded-full border-2 border-muted-foreground/30" />}
+          {scenario.routeOptions.map(r => {
+            const isSelected = selectedRouteId === r.id;
+            return (
+              <div
+                key={r.id}
+                onClick={() => setSelectedRouteId(r.id)}
+                className={cn(
+                  "rounded-xl border p-4 flex items-start gap-4 cursor-pointer transition-all duration-200",
+                  isSelected
+                    ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                    : "border-border hover:border-primary/40 hover:bg-muted/30"
+                )}
+              >
+                <div className="shrink-0 mt-0.5">
+                  {isSelected
+                    ? <CheckCircle2 className="h-5 w-5 text-primary" />
+                    : <div className="h-5 w-5 rounded-full border-2 border-muted-foreground/30" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
+                    <span className="font-semibold text-sm">{r.label}</span>
+                    {r.tags.map(tag => (
+                      <span key={tag} className={cn("text-[10px] px-2 py-0.5 rounded-full font-semibold", tagStyles[tag] || "bg-muted text-muted-foreground")}>
+                        {tag}
+                      </span>
+                    ))}
+                    <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full ml-auto", {
+                      "bg-emerald-100 text-emerald-700": r.onTimeRisk === "LOW",
+                      "bg-orange-100 text-orange-700": r.onTimeRisk === "MEDIUM",
+                      "bg-red-100 text-red-700": r.onTimeRisk === "HIGH",
+                    })}>{r.onTimeRisk} risk</span>
+                  </div>
+                  <div className="flex gap-1 flex-wrap mb-2">
+                    {r.stops.map((stop, si) => (
+                      <div key={si} className="flex items-center gap-1">
+                        <span className="text-xs text-muted-foreground">{stop}</span>
+                        {si < r.stops.length - 1 && <ChevronRight className="h-3 w-3 text-muted-foreground/50" />}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-4 gap-3 text-xs">
+                    <div><span className="text-muted-foreground">Distance</span><p className="font-semibold font-mono">{r.totalKm} km</p></div>
+                    <div><span className="text-muted-foreground">Duration</span><p className="font-semibold font-mono">{r.totalTime} hrs</p></div>
+                    <div><span className="text-muted-foreground">Fuel cost</span><p className="font-semibold font-mono">£{r.fuelCost}</p></div>
+                    <div><span className="text-muted-foreground">CO₂</span><p className="font-semibold font-mono">{r.co2kg} kg</p></div>
+                  </div>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-2 flex-wrap">
-                  <span className="font-semibold text-sm">{r.label}</span>
-                  {r.tags.map(tag => (
-                    <span key={tag} className={cn("text-[10px] px-2 py-0.5 rounded-full font-semibold", tagStyles[tag] || "bg-muted text-muted-foreground")}>
-                      {tag}
-                    </span>
-                  ))}
-                  <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full ml-auto", {
-                    "bg-emerald-100 text-emerald-700": r.onTimeRisk === "LOW",
-                    "bg-orange-100 text-orange-700": r.onTimeRisk === "MEDIUM",
-                    "bg-red-100 text-red-700": r.onTimeRisk === "HIGH",
-                  })}>{r.onTimeRisk} risk</span>
-                </div>
-                <div className="flex gap-1 flex-wrap mb-2">
-                  {r.stops.map((stop, si) => (
-                    <div key={si} className="flex items-center gap-1">
-                      <span className="text-xs text-muted-foreground">{stop}</span>
-                      {si < r.stops.length - 1 && <ChevronRight className="h-3 w-3 text-muted-foreground/50" />}
-                    </div>
-                  ))}
-                </div>
-                <div className="grid grid-cols-4 gap-3 text-xs">
-                  <div><span className="text-muted-foreground">Distance</span><p className="font-semibold font-mono">{r.totalKm} km</p></div>
-                  <div><span className="text-muted-foreground">Duration</span><p className="font-semibold font-mono">{r.totalTime} hrs</p></div>
-                  <div><span className="text-muted-foreground">Fuel cost</span><p className="font-semibold font-mono">£{r.fuelCost}</p></div>
-                  <div><span className="text-muted-foreground">CO₂</span><p className="font-semibold font-mono">{r.co2kg} kg</p></div>
-                </div>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -1379,22 +1399,15 @@ function SimulationView({ scenario, onDecision }: { scenario: Scenario; onDecisi
   );
 }
 
-// ─── Decision Summary (reordered) ────────────────────────────────────────────
+// ─── Decision Summary ─────────────────────────────────────────────────────────
 function DecisionView({ scenario, onModify }: { scenario: Scenario; onModify: () => void }) {
   const [approved, setApproved] = useState(false);
+  const [rejected, setRejected] = useState(false);
   const recommended = scenario.routeOptions.find(r => r.recommended)!;
-  const baseline = scenario.routeOptions[1];
   const customers = [...scenario.customers].sort((a, b) => a.hoursToEmpty - b.hoursToEmpty);
   const totalRevenue = customers.reduce((s, c) => s + c.annualRevenue, 0);
   const totalContract = customers.reduce((s, c) => s + c.contractValue, 0);
   const penaltyAvertedMax = customers[0].penaltyPerHour * 8;
-
-  const tagStyles: Record<string, string> = {
-    "LENA Recommended": "bg-primary/10 text-primary border border-primary/30",
-    "Customer Satisfaction": "bg-emerald-100 text-emerald-700 border border-emerald-300",
-    "Quick Delivery": "bg-blue-100 text-blue-700 border border-blue-300",
-    "Cost Efficient": "bg-amber-100 text-amber-700 border border-amber-300",
-  };
 
   return (
     <div className="space-y-6">
@@ -1402,7 +1415,7 @@ function DecisionView({ scenario, onModify }: { scenario: Scenario; onModify: ()
         <div>
           <h2 className="text-xl font-bold">Decision Summary</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Scenario {scenario.id} · {scenario.label} · Truck {scenario.truckId} · Generated by LENA
+            {scenario.label} · Truck {scenario.truckId} · Generated by LENA
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -1411,10 +1424,8 @@ function DecisionView({ scenario, onModify }: { scenario: Scenario; onModify: ()
         </div>
       </div>
 
-      {/* 1. Demand Allocation Pie Chart (replaces Situation) */}
       <DemandAllocationPie customers={customers} truckCapacity={scenario.truckCapacity} />
 
-      {/* 2. Recommended Delivery Sequence */}
       <div className="bg-card rounded-xl border p-5">
         <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">
           Recommended Delivery Sequence — {scenario.truckId}
@@ -1448,7 +1459,6 @@ function DecisionView({ scenario, onModify }: { scenario: Scenario; onModify: ()
         </div>
       </div>
 
-      {/* 3. Customer Credit Risk Profile */}
       <div className="bg-card rounded-xl border p-5">
         <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Customer Credit Risk Profile</h3>
         <div className="overflow-x-auto">
@@ -1493,7 +1503,6 @@ function DecisionView({ scenario, onModify }: { scenario: Scenario; onModify: ()
         </div>
       </div>
 
-      {/* 4. Financial Impact Analysis */}
       <div className="bg-card rounded-xl border p-5">
         <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Financial Impact Analysis</h3>
         <div className="grid grid-cols-2 gap-4">
@@ -1524,7 +1533,6 @@ function DecisionView({ scenario, onModify }: { scenario: Scenario; onModify: ()
         </div>
       </div>
 
-      {/* 5. Factors Considered by LENA */}
       <div className="bg-card rounded-xl border p-5">
         <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Factors Considered by LENA</h3>
         <div className="grid grid-cols-2 gap-3">
@@ -1535,7 +1543,7 @@ function DecisionView({ scenario, onModify }: { scenario: Scenario; onModify: ()
             { label: "Credit risk assessment", value: `${customers.map(c => c.name.split(" ")[0] + ": " + c.creditScore).join(" · ")}`, icon: CreditCard },
             { label: "Payment terms & on-time accuracy", value: `${customers.map(c => c.paymentOnTimeAccuracy + "% OTA").join(" · ")}`, icon: Clock },
             { label: "Route & fuel cost", value: `${recommended.totalKm} km · £${recommended.fuelCost} fuel`, icon: Navigation },
-            { label: "Carbon emissions", value: `${recommended.co2kg} kg CO₂ · ${((recommended.co2kg / baseline.co2kg - 1) * 100).toFixed(0)}% vs baseline`, icon: Zap },
+            { label: "Carbon emissions", value: `${recommended.co2kg} kg CO₂`, icon: Zap },
             { label: "Road & weather conditions", value: scenario.id === "C" ? "A63 flooding — M62 reroute active" : "Normal — no disruptions", icon: AlertTriangle },
           ].map(f => (
             <div key={f.label} className="flex gap-3 p-3 rounded-lg bg-muted/40">
@@ -1549,42 +1557,6 @@ function DecisionView({ scenario, onModify }: { scenario: Scenario; onModify: ()
         </div>
       </div>
 
-      {/* 6. Route Comparison */}
-      <div className="bg-card rounded-xl border p-5">
-        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Route Comparison</h3>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b text-xs text-muted-foreground">
-                <th className="text-left py-2 pr-4 font-medium">Metric</th>
-                <th className="text-left py-2 pr-4 font-medium">Geographic (baseline)</th>
-                <th className="text-left py-2 font-medium text-primary">LENA Optimal</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y text-xs">
-              {[
-                ["Truck ID", scenario.truckId, scenario.truckId],
-                ["Stop order", baseline.stops.join(" → "), recommended.stops.join(" → ")],
-                ["Distance", baseline.totalKm + " km", recommended.totalKm + " km"],
-                ["Est. duration", baseline.totalTime + " hrs", recommended.totalTime + " hrs"],
-                ["Fuel cost", "£" + baseline.fuelCost, "£" + recommended.fuelCost],
-                ["CO₂ emissions", baseline.co2kg + " kg", recommended.co2kg + " kg"],
-                ["On-time risk", baseline.onTimeRisk, recommended.onTimeRisk],
-                ["SLA penalty exposure", "£" + (customers[0].penaltyPerHour * 8).toFixed(0) + "K — breach likely", "£0 — all SLAs met"],
-                ["Critical SLA met?", "NO — " + customers[0].name.split(" ")[0] + " runs out in " + customers[0].hoursToEmpty + "h", "YES — all 3 customers covered"],
-              ].map(([metric, base, optimal]) => (
-                <tr key={metric as string}>
-                  <td className="py-2.5 pr-4 text-muted-foreground font-medium">{metric}</td>
-                  <td className="py-2.5 pr-4 text-foreground">{base}</td>
-                  <td className={cn("py-2.5 font-semibold", (optimal as string).includes("YES") || (optimal as string) === scenario.truckId ? "text-primary" : (optimal as string).includes("£0") ? "text-emerald-600" : "text-primary")}>{optimal}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* 7. Impact of This Decision */}
       <div className="bg-card rounded-xl border p-5">
         <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Impact of This Decision</h3>
         <div className="grid grid-cols-3 gap-3">
@@ -1603,8 +1575,15 @@ function DecisionView({ scenario, onModify }: { scenario: Scenario; onModify: ()
         </div>
       </div>
 
-      {/* Human approval */}
-      {!approved ? (
+      <div className="bg-emerald-50 border border-emerald-300 rounded-xl p-4 flex items-start gap-3">
+        <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
+        <div>
+          <span className="font-semibold text-emerald-700 text-sm">LENA — Analysis complete. Route optimised.</span>
+          <p className="text-sm text-emerald-700 mt-1">{scenario.lenadecision}</p>
+        </div>
+      </div>
+
+      {!approved && !rejected ? (
         <div className="bg-primary/5 border-2 border-primary/30 rounded-xl p-6">
           <div className="flex items-start gap-4">
             <Users className="h-6 w-6 text-primary shrink-0 mt-0.5" />
@@ -1622,11 +1601,14 @@ function DecisionView({ scenario, onModify }: { scenario: Scenario; onModify: ()
                 <Button variant="outline" className="gap-2" onClick={onModify}>
                   <RotateCcw className="h-4 w-4" /> Modify Decision
                 </Button>
+                <Button variant="outline" className="gap-2 border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => setRejected(true)}>
+                  <XCircle className="h-4 w-4" /> Reject
+                </Button>
               </div>
             </div>
           </div>
         </div>
-      ) : (
+      ) : approved ? (
         <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-700 rounded-xl p-6 space-y-3">
           <div className="flex items-center gap-3">
             <CheckCircle2 className="h-8 w-8 text-emerald-600 shrink-0" />
@@ -1655,6 +1637,25 @@ function DecisionView({ scenario, onModify }: { scenario: Scenario; onModify: ()
           </div>
           <p className="text-xs text-emerald-600">Dispatch confirmed · All agents standing by.</p>
         </div>
+      ) : (
+        <div className="bg-red-50 dark:bg-red-950/30 border border-red-300 dark:border-red-700 rounded-xl p-6 space-y-3">
+          <div className="flex items-center gap-3">
+            <XCircle className="h-8 w-8 text-red-600 shrink-0" />
+            <div>
+              <h3 className="font-semibold text-red-700 dark:text-red-400">
+                Dispatch Rejected — {scenario.truckId} On Hold
+              </h3>
+              <p className="text-sm text-red-600 dark:text-red-500">
+                The dispatch plan has been rejected. Truck {scenario.truckId} remains at {scenario.depotLocation} pending a revised plan.
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-3 pt-1">
+            <Button variant="outline" className="gap-2" onClick={onModify}>
+              <RotateCcw className="h-4 w-4" /> Review & Modify Plan
+            </Button>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -1665,9 +1666,23 @@ export default function SupplyChain() {
   const [view, setView] = useState<View>("dashboard");
   const [scenario, setScenario] = useState<Scenario | null>(null);
 
-  function handleVoteResult(sid: ScenarioId) {
-    setScenario(SCENARIOS[sid]);
-    setView("agent-working");
+  // Auto-select scenario A by default when launching
+  useEffect(() => {
+    const sid = sessionStorage.getItem("lena_scenario") as ScenarioId | null;
+    const autostart = sessionStorage.getItem("lena_autostart");
+    if (sid && autostart === "true" && SCENARIOS[sid]) {
+      sessionStorage.removeItem("lena_scenario");
+      sessionStorage.removeItem("lena_autostart");
+      setScenario(SCENARIOS[sid]);
+      setView("telemetry-connect");
+    }
+  }, []);
+
+  function handleLaunch() {
+    // Pick scenario A by default (or could be randomised)
+    const defaultScenario = SCENARIOS["A"];
+    setScenario(defaultScenario);
+    setView("telemetry-connect");
   }
 
   return (
@@ -1680,6 +1695,7 @@ export default function SupplyChain() {
             if (v === "dashboard") setView("dashboard");
             else if (v === "decision" && scenario) setView("decision");
             else if (v === "simulation" && scenario) setView("simulation");
+            else if (v === "agent-working" && scenario) setView("agent-working");
           }}
         />
         <div className="flex-1 flex flex-col overflow-hidden">
@@ -1690,27 +1706,23 @@ export default function SupplyChain() {
               <span>Core</span>
               <ChevronRight className="h-3 w-3" />
               <span>Supply Chain</span>
-              {view === "agent-working" && <><ChevronRight className="h-3 w-3" /><span className="text-foreground">LENA Agents Working</span></>}
-              {view === "simulation" && <><ChevronRight className="h-3 w-3" /><span className="text-foreground">Simulation</span></>}
-              {view === "voting" && <><ChevronRight className="h-3 w-3" /><span className="text-foreground">Audience Vote</span></>}
+              {view === "agent-working" && <><ChevronRight className="h-3 w-3" /><span className="text-foreground">Master Agent</span></>}
+              {view === "simulation" && <><ChevronRight className="h-3 w-3" /><span className="text-foreground">Routing Agent</span></>}
+              {view === "telemetry-connect" && <><ChevronRight className="h-3 w-3" /><span className="text-foreground">Telemetry Connect</span></>}
               {view === "decision" && <><ChevronRight className="h-3 w-3" /><span className="text-foreground">Decision Summary</span></>}
             </nav>
-            {scenario && view !== "dashboard" && (
-              <div className="ml-auto flex items-center gap-2">
-                <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">Scenario {scenario.id}</span>
-                <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full uppercase", {
-                  "bg-red-100 text-red-700": scenario.id === "A",
-                  "bg-orange-100 text-orange-700": scenario.id === "B",
-                  "bg-blue-100 text-blue-700": scenario.id === "C",
-                })}>Active</span>
-              </div>
-            )}
+            {/* Scenario badge removed from top bar for simulation and decision views */}
           </div>
 
           <div className="flex-1 overflow-y-auto">
             <div className="max-w-6xl mx-auto px-6 py-6">
-              {view === "dashboard" && <DashboardView onStartSimulation={() => setView("voting")} />}
-              {view === "voting" && <VotingView onVote={handleVoteResult} />}
+              {view === "dashboard" && <DashboardView onStartSimulation={handleLaunch} />}
+              {view === "telemetry-connect" && scenario && (
+                <TelemetryConnectView
+                  scenario={scenario}
+                  onComplete={() => setView("agent-working")}
+                />
+              )}
               {view === "agent-working" && scenario && (
                 <AgentWorkingView scenario={scenario} onComplete={() => setView("simulation")} />
               )}
