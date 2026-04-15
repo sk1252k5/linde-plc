@@ -13,15 +13,14 @@ import {
   SidebarSeparator,
 } from "@/components/ui/sidebar";
 
+import USER_NAME from "@/data/data";
+
 import {
   LayoutDashboard,
   BrainCircuit,
   Truck,
   Factory,
   TrendingUp,
-  Banknote,
-  UsersRound,
-  Shield,
   Brain,
   Settings
 } from "lucide-react";
@@ -31,11 +30,11 @@ import { cn } from "@/lib/utils";
 
 const CORE_NAV = [
   { label: "Vision Panel", to: "/vision-panel", icon: LayoutDashboard, exact: true },
-  { label: "Nexus", to: "/consolidated-dashboard/nexus", icon: BrainCircuit },
-  { label: "NuroVault", to: "/consolidated-dashboard/nurovault", icon: Truck},
-  { label: "NuroForge", to: "/consolidated-dashboard/nuroforge", icon: Factory },
-  { label: "NuroStack", to: "/consolidated-dashboard/nurostack", icon: TrendingUp },
-  {label: "NuroModels", to: "/consolidated-dashboard/nuromodels", icon: Brain},
+  { label: "Nexus", to: "/nexus", icon: BrainCircuit },
+  { label: "NuroVault", to: "/nurovault", icon: Truck},
+  { label: "NuroForge", to: "/nuroforge", icon: Factory },
+  { label: "NuroStack", to: "/nurostack", icon: TrendingUp },
+  {label: "NuroModels", to: "/nuromodels", icon: Brain},
 ];
 
 const SYSTEM_NAV = [
@@ -153,11 +152,11 @@ function SystemSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarFooter className="border-t border-sidebar-border p-3">
         <div className="flex items-center gap-3 px-2 py-2 rounded-md hover:bg-sidebar-accent transition-colors cursor-default">
           <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-            <span className="text-xs font-semibold text-primary">COO</span>
+            <span className="text-xs font-semibold text-primary">{USER_NAME.charAt(0)}</span>
           </div>
           <div className="flex flex-col min-w-0">
             <span className="text-sm font-medium text-sidebar-foreground leading-tight truncate">
-              John Smith
+              {USER_NAME}
             </span>
             <span className="text-[11px] text-sidebar-foreground/50 leading-tight">
               COO

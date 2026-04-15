@@ -13,6 +13,7 @@ import ItCybersecurity from "./pages/It & cybersecurity";
 import EosAssistant from "./pages/EosAssistant";
 import Settings from "./pages/Settings";
 import VisionPanel from "./VisionPanel";
+import NuroStack from "./pages/NuroStack";
 import ConsolidatedDashboard from "./pages/ConsolidatedDashboard";
 
 export const Routes: RouteObject[] = [
@@ -24,6 +25,7 @@ export const Routes: RouteObject[] = [
         element: <SystemLayout />,
         children: [
           { path: "vision-panel", element: <VisionPanel /> },
+          { path: "nurostack", element: <NuroStack /> },
         ],
       },
       {
