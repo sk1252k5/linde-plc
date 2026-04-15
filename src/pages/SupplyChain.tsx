@@ -15,11 +15,12 @@ import {
   Thermometer, Zap, ArrowRight, ChevronRight, MapPin,
   AlertCircle, BarChart3, Navigation, Package, Brain,
   Shield, CreditCard, Activity, Wifi, Database,
-  RotateCcw,
+  RotateCcw, Globe, Droplets,
 } from "lucide-react";
 
 type ScenarioId = "A" | "B" | "C";
 type View = "dashboard" | "voting" | "agent-working" | "simulation" | "decision";
+type Region = "North America" | "South America" | "Europe" | "Africa" | "Asia" | "Australia";
 
 interface Customer {
   id: string; name: string; industry: string; location: string;
@@ -28,13 +29,17 @@ interface Customer {
   priority: "CRITICAL" | "HIGH" | "MEDIUM";
   hoursToEmpty: number; distanceFromDepot: number;
   deliveryRequired: number;
-  annualRevenue: number; // £M annual
-  contractValue: number; // £M contract value
-  creditRating: "AAA" | "AA" | "A" | "BBB";
-  paymentDays: number; // average payment days
+  annualRevenue: number;
+  contractValue: number;
+  creditScore: number;
+  paymentDays: number;
   contractType: "Take-or-Pay" | "Spot" | "Long-Term";
-  penaltyPerHour: number; // £k penalty if SLA missed
+  penaltyPerHour: number;
   lastDelivery: string;
+  lastPaymentDate: string;
+  lastPaymentAmount: number;
+  paymentOnTimeAccuracy: number;
+  distanceFromPlant: number;
 }
 
 interface Scenario {
@@ -42,6 +47,9 @@ interface Scenario {
   customers: Customer[]; truckCapacity: number;
   depotLocation: string; truckId: string;
   routeOptions: RouteOption[]; lenadecision: string;
+  gasType: string;
+  inventoryLevel: number;
+  expectedDemand7Days: number;
 }
 
 interface RouteOption {
@@ -49,9 +57,9 @@ interface RouteOption {
   totalKm: number; totalTime: number; fuelCost: number;
   co2kg: number; onTimeRisk: "LOW" | "MEDIUM" | "HIGH";
   recommended?: boolean;
+  tags: string[];
 }
 
-// ─── Agent step type ──────────────────────────────────────────────────────────
 interface AgentStep {
   agentName: string;
   icon: typeof Brain;
@@ -62,6 +70,67 @@ interface AgentStep {
   durationMs: number;
 }
 
+interface RegionalTank {
+  tankId: string;
+  customerName: string;
+  location: string;
+  fillLevel: number;
+  gas: string;
+  hoursToEmpty: number;
+  dailyUsage: number;
+}
+
+// ─── Regional Tank Data ───────────────────────────────────────────────────────
+const REGIONAL_TANKS: Record<Region, RegionalTank[]> = {
+  "North America": [
+    { tankId: "NA-T001", customerName: "Texas Steel Corp", location: "Houston, TX", fillLevel: 72, gas: "N₂", hoursToEmpty: 48.2, dailyUsage: 42 },
+    { tankId: "NA-T002", customerName: "Boston BioTech", location: "Boston, MA", fillLevel: 28, gas: "O₂", hoursToEmpty: 9.1, dailyUsage: 18 },
+    { tankId: "NA-T003", customerName: "Chicago Medical Center", location: "Chicago, IL", fillLevel: 55, gas: "N₂", hoursToEmpty: 31.6, dailyUsage: 12 },
+    { tankId: "NA-T004", customerName: "Seattle Semiconductor", location: "Seattle, WA", fillLevel: 18, gas: "Ar", hoursToEmpty: 6.3, dailyUsage: 35 },
+    { tankId: "NA-T005", customerName: "Detroit Auto Parts", location: "Detroit, MI", fillLevel: 61, gas: "CO₂", hoursToEmpty: 44.0, dailyUsage: 28 },
+    { tankId: "NA-T006", customerName: "LA Pharma Group", location: "Los Angeles, CA", fillLevel: 38, gas: "H₂", hoursToEmpty: 14.8, dailyUsage: 22 },
+  ],
+  "South America": [
+    { tankId: "SA-T001", customerName: "São Paulo Steel", location: "São Paulo, Brazil", fillLevel: 45, gas: "N₂", hoursToEmpty: 22.5, dailyUsage: 39 },
+    { tankId: "SA-T002", customerName: "Buenos Aires Pharma", location: "Buenos Aires, Argentina", fillLevel: 82, gas: "O₂", hoursToEmpty: 67.3, dailyUsage: 14 },
+    { tankId: "SA-T003", customerName: "Lima Mining Co", location: "Lima, Peru", fillLevel: 21, gas: "Ar", hoursToEmpty: 7.9, dailyUsage: 31 },
+    { tankId: "SA-T004", customerName: "Bogotá Hospital Trust", location: "Bogotá, Colombia", fillLevel: 64, gas: "N₂", hoursToEmpty: 38.2, dailyUsage: 8 },
+    { tankId: "SA-T005", customerName: "Santiago Chemical Works", location: "Santiago, Chile", fillLevel: 33, gas: "CO₂", hoursToEmpty: 12.4, dailyUsage: 26 },
+  ],
+  "Europe": [
+    { tankId: "EU-T001", customerName: "Helios Steel Works", location: "Scunthorpe, UK", fillLevel: 10, gas: "N₂", hoursToEmpty: 2.1, dailyUsage: 38 },
+    { tankId: "EU-T002", customerName: "BioPharm Solutions", location: "Grimsby, UK", fillLevel: 25, gas: "N₂", hoursToEmpty: 11.1, dailyUsage: 9 },
+    { tankId: "EU-T003", customerName: "CryoMed Hospital Trust", location: "Hull, UK", fillLevel: 50, gas: "N₂", hoursToEmpty: 28.6, dailyUsage: 3.5 },
+    { tankId: "EU-T004", customerName: "Frankfurt Auto GmbH", location: "Frankfurt, Germany", fillLevel: 78, gas: "Ar", hoursToEmpty: 58.4, dailyUsage: 21 },
+    { tankId: "EU-T005", customerName: "Paris MedLabs", location: "Paris, France", fillLevel: 42, gas: "O₂", hoursToEmpty: 19.7, dailyUsage: 15 },
+    { tankId: "EU-T006", customerName: "Milan Textile SpA", location: "Milan, Italy", fillLevel: 67, gas: "N₂", hoursToEmpty: 41.3, dailyUsage: 11 },
+    { tankId: "EU-T007", customerName: "Rotterdam Port Logistics", location: "Rotterdam, Netherlands", fillLevel: 29, gas: "H₂", hoursToEmpty: 8.6, dailyUsage: 44 },
+  ],
+  "Africa": [
+    { tankId: "AF-T001", customerName: "Johannesburg Steel", location: "Johannesburg, South Africa", fillLevel: 53, gas: "N₂", hoursToEmpty: 28.1, dailyUsage: 33 },
+    { tankId: "AF-T002", customerName: "Lagos BioMed", location: "Lagos, Nigeria", fillLevel: 17, gas: "O₂", hoursToEmpty: 5.4, dailyUsage: 19 },
+    { tankId: "AF-T003", customerName: "Cairo Pharma Trust", location: "Cairo, Egypt", fillLevel: 71, gas: "N₂", hoursToEmpty: 52.7, dailyUsage: 7 },
+    { tankId: "AF-T004", customerName: "Nairobi Medical Centre", location: "Nairobi, Kenya", fillLevel: 36, gas: "O₂", hoursToEmpty: 13.2, dailyUsage: 16 },
+    { tankId: "AF-T005", customerName: "Accra Industrial", location: "Accra, Ghana", fillLevel: 88, gas: "CO₂", hoursToEmpty: 74.6, dailyUsage: 12 },
+  ],
+  "Asia": [
+    { tankId: "AS-T001", customerName: "Chennai Pharma Ltd", location: "Chennai, India", fillLevel: 24, gas: "N₂", hoursToEmpty: 8.2, dailyUsage: 29 },
+    { tankId: "AS-T002", customerName: "Tokyo Electronics", location: "Tokyo, Japan", fillLevel: 68, gas: "Ar", hoursToEmpty: 47.5, dailyUsage: 37 },
+    { tankId: "AS-T003", customerName: "Shanghai Steel Group", location: "Shanghai, China", fillLevel: 41, gas: "N₂", hoursToEmpty: 18.3, dailyUsage: 52 },
+    { tankId: "AS-T004", customerName: "Mumbai Hospital Network", location: "Mumbai, India", fillLevel: 15, gas: "O₂", hoursToEmpty: 4.7, dailyUsage: 22 },
+    { tankId: "AS-T005", customerName: "Seoul Semiconductor", location: "Seoul, South Korea", fillLevel: 79, gas: "N₂", hoursToEmpty: 61.8, dailyUsage: 41 },
+    { tankId: "AS-T006", customerName: "Singapore LNG Terminal", location: "Singapore", fillLevel: 56, gas: "H₂", hoursToEmpty: 33.9, dailyUsage: 48 },
+    { tankId: "AS-T007", customerName: "Bangkok BioTech", location: "Bangkok, Thailand", fillLevel: 32, gas: "N₂", hoursToEmpty: 11.6, dailyUsage: 17 },
+  ],
+  "Australia": [
+    { tankId: "AU-T001", customerName: "Sydney Medical Trust", location: "Sydney, NSW", fillLevel: 63, gas: "O₂", hoursToEmpty: 39.4, dailyUsage: 14 },
+    { tankId: "AU-T002", customerName: "Melbourne Pharma", location: "Melbourne, VIC", fillLevel: 27, gas: "N₂", hoursToEmpty: 10.3, dailyUsage: 23 },
+    { tankId: "AU-T003", customerName: "Perth Mining Corp", location: "Perth, WA", fillLevel: 84, gas: "Ar", hoursToEmpty: 71.2, dailyUsage: 36 },
+    { tankId: "AU-T004", customerName: "Brisbane Steel Works", location: "Brisbane, QLD", fillLevel: 19, gas: "N₂", hoursToEmpty: 6.8, dailyUsage: 28 },
+    { tankId: "AU-T005", customerName: "Adelaide Chemical", location: "Adelaide, SA", fillLevel: 47, gas: "CO₂", hoursToEmpty: 24.1, dailyUsage: 18 },
+  ],
+};
+
 // ─── Scenario Data ────────────────────────────────────────────────────────────
 const SCENARIOS: Record<ScenarioId, Scenario> = {
   A: {
@@ -69,6 +138,9 @@ const SCENARIOS: Record<ScenarioId, Scenario> = {
     description: "Primary production plant offline. Nitrogen supply critically low.",
     depotLocation: "Linde Depot, Scunthorpe", truckId: "LIN-T4821",
     truckCapacity: 100,
+    gasType: "Nitrogen (N₂)",
+    inventoryLevel: 340,
+    expectedDemand7Days: 360,
     customers: [
       {
         id: "C1", name: "Helios Steel Works", industry: "Steel Manufacturing",
@@ -76,8 +148,10 @@ const SCENARIOS: Record<ScenarioId, Scenario> = {
         tankCapacity: 800, currentLevel: 10, dailyUsage: 38, threshold: 10,
         priority: "CRITICAL", hoursToEmpty: 2.1, distanceFromDepot: 12,
         deliveryRequired: 72, annualRevenue: 4.2, contractValue: 18.6,
-        creditRating: "AA", paymentDays: 28, contractType: "Take-or-Pay",
+        creditScore: 720, paymentDays: 28, contractType: "Take-or-Pay",
         penaltyPerHour: 14.2, lastDelivery: "48 hrs ago",
+        lastPaymentDate: "01 Apr 2026", lastPaymentAmount: 142000,
+        paymentOnTimeAccuracy: 96, distanceFromPlant: 12,
       },
       {
         id: "C2", name: "BioPharm Solutions", industry: "Pharmaceutical",
@@ -85,8 +159,10 @@ const SCENARIOS: Record<ScenarioId, Scenario> = {
         tankCapacity: 400, currentLevel: 25, dailyUsage: 9, threshold: 25,
         priority: "HIGH", hoursToEmpty: 11.1, distanceFromDepot: 28,
         deliveryRequired: 60, annualRevenue: 2.8, contractValue: 9.4,
-        creditRating: "AAA", paymentDays: 21, contractType: "Long-Term",
+        creditScore: 810, paymentDays: 21, contractType: "Long-Term",
         penaltyPerHour: 8.6, lastDelivery: "3 days ago",
+        lastPaymentDate: "28 Mar 2026", lastPaymentAmount: 86000,
+        paymentOnTimeAccuracy: 99, distanceFromPlant: 28,
       },
       {
         id: "C3", name: "CryoMed Hospital Trust", industry: "Healthcare",
@@ -94,20 +170,25 @@ const SCENARIOS: Record<ScenarioId, Scenario> = {
         tankCapacity: 200, currentLevel: 50, dailyUsage: 3.5, threshold: 50,
         priority: "MEDIUM", hoursToEmpty: 28.6, distanceFromDepot: 41,
         deliveryRequired: 30, annualRevenue: 1.9, contractValue: 6.1,
-        creditRating: "A", paymentDays: 30, contractType: "Long-Term",
+        creditScore: 680, paymentDays: 30, contractType: "Long-Term",
         penaltyPerHour: 22.0, lastDelivery: "5 days ago",
+        lastPaymentDate: "25 Mar 2026", lastPaymentAmount: 61000,
+        paymentOnTimeAccuracy: 88, distanceFromPlant: 41,
       },
     ],
     routeOptions: [
       { id: "R1", label: "Priority-first (LENA Optimal)", recommended: true,
         stops: ["Scunthorpe Depot", "Helios Steel", "BioPharm", "CryoMed Hospital"],
-        totalKm: 98, totalTime: 4.2, fuelCost: 187, co2kg: 94, onTimeRisk: "LOW" },
+        totalKm: 98, totalTime: 4.2, fuelCost: 187, co2kg: 94, onTimeRisk: "LOW",
+        tags: ["LENA Recommended", "Customer Satisfaction"] },
       { id: "R2", label: "Geographic shortest path",
         stops: ["Scunthorpe Depot", "BioPharm", "CryoMed Hospital", "Helios Steel"],
-        totalKm: 89, totalTime: 5.8, fuelCost: 171, co2kg: 86, onTimeRisk: "HIGH" },
+        totalKm: 89, totalTime: 5.8, fuelCost: 171, co2kg: 86, onTimeRisk: "HIGH",
+        tags: ["Quick Delivery"] },
       { id: "R3", label: "Revenue-weighted",
         stops: ["Scunthorpe Depot", "Helios Steel", "CryoMed Hospital", "BioPharm"],
-        totalKm: 112, totalTime: 4.9, fuelCost: 215, co2kg: 108, onTimeRisk: "MEDIUM" },
+        totalKm: 112, totalTime: 4.9, fuelCost: 215, co2kg: 108, onTimeRisk: "MEDIUM",
+        tags: ["Cost Efficient"] },
     ],
     lenadecision: "Helios Steel at 10% with 2.1 hrs — dispatching immediately. Take-or-Pay penalty £14.2K/hr averted. BioPharm second at 11.1 hrs. CryoMed last with 28.6hr buffer.",
   },
@@ -116,24 +197,31 @@ const SCENARIOS: Record<ScenarioId, Scenario> = {
     description: "Unexpected production surge at pharmaceutical plant. Threshold breached.",
     depotLocation: "Linde Depot, Scunthorpe", truckId: "LIN-T3306",
     truckCapacity: 100,
+    gasType: "Nitrogen (N₂)",
+    inventoryLevel: 420,
+    expectedDemand7Days: 390,
     customers: [
       {
         id: "C1", name: "Helios Steel Works", industry: "Steel Manufacturing",
         location: "Scunthorpe, North Lincolnshire", gas: "Nitrogen (N₂)",
         tankCapacity: 800, currentLevel: 25, dailyUsage: 38, threshold: 25,
         priority: "HIGH", hoursToEmpty: 5.3, distanceFromDepot: 12,
-        deliveryRequired: 60, annualRevenue: 4.2, contractValue: 18.6,
-        creditRating: "AA", paymentDays: 28, contractType: "Take-or-Pay",
+        deliveryRequired: 45, annualRevenue: 4.2, contractValue: 18.6,
+        creditScore: 720, paymentDays: 28, contractType: "Take-or-Pay",
         penaltyPerHour: 14.2, lastDelivery: "36 hrs ago",
+        lastPaymentDate: "01 Apr 2026", lastPaymentAmount: 142000,
+        paymentOnTimeAccuracy: 96, distanceFromPlant: 12,
       },
       {
         id: "C2", name: "BioPharm Solutions", industry: "Pharmaceutical",
         location: "Grimsby, Lincolnshire", gas: "Nitrogen (N₂)",
         tankCapacity: 400, currentLevel: 50, dailyUsage: 24, threshold: 50,
         priority: "CRITICAL", hoursToEmpty: 8.3, distanceFromDepot: 28,
-        deliveryRequired: 80, annualRevenue: 2.8, contractValue: 9.4,
-        creditRating: "AAA", paymentDays: 21, contractType: "Long-Term",
+        deliveryRequired: 35, annualRevenue: 2.8, contractValue: 9.4,
+        creditScore: 810, paymentDays: 21, contractType: "Long-Term",
         penaltyPerHour: 8.6, lastDelivery: "4 days ago",
+        lastPaymentDate: "28 Mar 2026", lastPaymentAmount: 86000,
+        paymentOnTimeAccuracy: 99, distanceFromPlant: 28,
       },
       {
         id: "C3", name: "CryoMed Hospital Trust", industry: "Healthcare",
@@ -141,20 +229,25 @@ const SCENARIOS: Record<ScenarioId, Scenario> = {
         tankCapacity: 200, currentLevel: 10, dailyUsage: 3.5, threshold: 10,
         priority: "CRITICAL", hoursToEmpty: 5.7, distanceFromDepot: 41,
         deliveryRequired: 20, annualRevenue: 1.9, contractValue: 6.1,
-        creditRating: "A", paymentDays: 30, contractType: "Long-Term",
+        creditScore: 680, paymentDays: 30, contractType: "Long-Term",
         penaltyPerHour: 22.0, lastDelivery: "6 days ago",
+        lastPaymentDate: "25 Mar 2026", lastPaymentAmount: 61000,
+        paymentOnTimeAccuracy: 88, distanceFromPlant: 41,
       },
     ],
     routeOptions: [
       { id: "R1", label: "Dual-critical optimised (LENA Optimal)", recommended: true,
         stops: ["Scunthorpe Depot", "Helios Steel", "CryoMed Hospital", "BioPharm"],
-        totalKm: 104, totalTime: 4.7, fuelCost: 199, co2kg: 101, onTimeRisk: "LOW" },
+        totalKm: 104, totalTime: 4.7, fuelCost: 199, co2kg: 101, onTimeRisk: "LOW",
+        tags: ["LENA Recommended", "Customer Satisfaction"] },
       { id: "R2", label: "Geographic shortest path",
         stops: ["Scunthorpe Depot", "BioPharm", "CryoMed Hospital", "Helios Steel"],
-        totalKm: 89, totalTime: 6.1, fuelCost: 171, co2kg: 86, onTimeRisk: "HIGH" },
+        totalKm: 89, totalTime: 6.1, fuelCost: 171, co2kg: 86, onTimeRisk: "HIGH",
+        tags: ["Quick Delivery"] },
       { id: "R3", label: "Revenue-weighted",
         stops: ["Scunthorpe Depot", "Helios Steel", "BioPharm", "CryoMed Hospital"],
-        totalKm: 118, totalTime: 5.3, fuelCost: 226, co2kg: 113, onTimeRisk: "MEDIUM" },
+        totalKm: 118, totalTime: 5.3, fuelCost: 226, co2kg: 113, onTimeRisk: "MEDIUM",
+        tags: ["Cost Efficient"] },
     ],
     lenadecision: "Two customers simultaneously critical. Helios Steel nearest with Take-or-Pay risk. CryoMed life-critical facility served second. BioPharm demand surge served last with buffer.",
   },
@@ -163,6 +256,9 @@ const SCENARIOS: Record<ScenarioId, Scenario> = {
     description: "Flooding closes A63 corridor. CryoMed hospital access severely limited.",
     depotLocation: "Linde Depot, Scunthorpe", truckId: "LIN-T5512",
     truckCapacity: 100,
+    gasType: "Nitrogen (N₂)",
+    inventoryLevel: 290,
+    expectedDemand7Days: 310,
     customers: [
       {
         id: "C1", name: "Helios Steel Works", industry: "Steel Manufacturing",
@@ -170,44 +266,53 @@ const SCENARIOS: Record<ScenarioId, Scenario> = {
         tankCapacity: 800, currentLevel: 50, dailyUsage: 38, threshold: 50,
         priority: "MEDIUM", hoursToEmpty: 10.5, distanceFromDepot: 12,
         deliveryRequired: 30, annualRevenue: 4.2, contractValue: 18.6,
-        creditRating: "AA", paymentDays: 28, contractType: "Take-or-Pay",
+        creditScore: 720, paymentDays: 28, contractType: "Take-or-Pay",
         penaltyPerHour: 14.2, lastDelivery: "24 hrs ago",
+        lastPaymentDate: "01 Apr 2026", lastPaymentAmount: 142000,
+        paymentOnTimeAccuracy: 96, distanceFromPlant: 12,
       },
       {
         id: "C2", name: "BioPharm Solutions", industry: "Pharmaceutical",
         location: "Grimsby, Lincolnshire", gas: "Nitrogen (N₂)",
         tankCapacity: 400, currentLevel: 10, dailyUsage: 9, threshold: 10,
         priority: "CRITICAL", hoursToEmpty: 4.4, distanceFromDepot: 28,
-        deliveryRequired: 72, annualRevenue: 2.8, contractValue: 9.4,
-        creditRating: "AAA", paymentDays: 21, contractType: "Long-Term",
+        deliveryRequired: 55, annualRevenue: 2.8, contractValue: 9.4,
+        creditScore: 810, paymentDays: 21, contractType: "Long-Term",
         penaltyPerHour: 8.6, lastDelivery: "5 days ago",
+        lastPaymentDate: "28 Mar 2026", lastPaymentAmount: 86000,
+        paymentOnTimeAccuracy: 99, distanceFromPlant: 28,
       },
       {
         id: "C3", name: "CryoMed Hospital Trust", industry: "Healthcare",
         location: "Hull, East Yorkshire", gas: "Nitrogen (N₂)",
         tankCapacity: 200, currentLevel: 25, dailyUsage: 3.5, threshold: 25,
         priority: "HIGH", hoursToEmpty: 14.3, distanceFromDepot: 67,
-        deliveryRequired: 40, annualRevenue: 1.9, contractValue: 6.1,
-        creditRating: "A", paymentDays: 30, contractType: "Long-Term",
+        deliveryRequired: 15, annualRevenue: 1.9, contractValue: 6.1,
+        creditScore: 680, paymentDays: 30, contractType: "Long-Term",
         penaltyPerHour: 22.0, lastDelivery: "7 days ago",
+        lastPaymentDate: "25 Mar 2026", lastPaymentAmount: 61000,
+        paymentOnTimeAccuracy: 88, distanceFromPlant: 67,
       },
     ],
     routeOptions: [
       { id: "R1", label: "Detour-aware safe route (LENA Optimal)", recommended: true,
         stops: ["Scunthorpe Depot", "BioPharm", "Helios Steel", "CryoMed (via M62)"],
-        totalKm: 138, totalTime: 5.9, fuelCost: 264, co2kg: 132, onTimeRisk: "LOW" },
+        totalKm: 138, totalTime: 5.9, fuelCost: 264, co2kg: 132, onTimeRisk: "LOW",
+        tags: ["LENA Recommended", "Customer Satisfaction"] },
       { id: "R2", label: "Standard geographic (A63 — flooded)",
         stops: ["Scunthorpe Depot", "BioPharm", "CryoMed (A63 — blocked)", "Helios Steel"],
-        totalKm: 89, totalTime: 9.1, fuelCost: 171, co2kg: 86, onTimeRisk: "HIGH" },
+        totalKm: 89, totalTime: 9.1, fuelCost: 171, co2kg: 86, onTimeRisk: "HIGH",
+        tags: ["Quick Delivery"] },
       { id: "R3", label: "Revenue-weighted",
         stops: ["Scunthorpe Depot", "Helios Steel", "BioPharm", "CryoMed (M62)"],
-        totalKm: 149, totalTime: 6.8, fuelCost: 285, co2kg: 143, onTimeRisk: "MEDIUM" },
+        totalKm: 149, totalTime: 6.8, fuelCost: 285, co2kg: 143, onTimeRisk: "MEDIUM",
+        tags: ["Cost Efficient"] },
     ],
     lenadecision: "A63 flooding confirmed via telemetry. BioPharm at 4.4 hrs — nearest and first. CryoMed rerouted via M62 (+26 km). Helios Steel at 50% has safe buffer.",
   },
 };
 
-// ─── Agent steps generator ────────────────────────────────────────────────────
+// ─── Agent steps ──────────────────────────────────────────────────────────────
 function buildAgentSteps(s: Scenario): AgentStep[] {
   const c = [...s.customers].sort((a, b) => a.hoursToEmpty - b.hoursToEmpty);
   return [
@@ -224,43 +329,43 @@ function buildAgentSteps(s: Scenario): AgentStep[] {
       durationMs: 1400,
     },
     {
-      agentName: "Risk Agent",
-      icon: Shield, color: "text-red-600",
-      action: "Assessing SLA & contract risk",
-      detail: "Cross-referencing Take-or-Pay clauses, penalty schedules, historical breach data",
-      dataPoints: [
-        { label: "SLA penalty exposure", value: `£${(c[0].penaltyPerHour * c[0].hoursToEmpty).toFixed(0)}K if delayed` },
-        { label: "Contract at risk", value: `£${c[0].contractValue}M — ${c[0].contractType}` },
-        { label: "Credit rating", value: `${c[0].creditRating} · ${c[0].paymentDays} day terms` },
-      ],
-      durationMs: 1600,
-    },
-    {
-      agentName: "Demand Agent",
+      agentName: "Demand & Allocation Agent",
       icon: TrendingUp, color: "text-violet-600",
-      action: "Forecasting consumption & urgency",
-      detail: "Computing time-to-empty from usage rate · tank level · threshold delta",
+      action: "Forecasting demand & allocating volumes",
+      detail: "Computing 7-day demand curves · allocating m³ per customer · checking truck capacity",
       dataPoints: [
-        { label: c[0].name, value: `${c[0].dailyUsage} m³/hr → IMMINENT` },
-        { label: c[1].name, value: `${c[1].dailyUsage} m³/hr → ${c[1].hoursToEmpty < 10 ? "URGENT" : "STABLE"}` },
-        { label: c[2].name, value: `${c[2].dailyUsage} m³/hr → STABLE` },
+        { label: "7-day demand", value: `${s.expectedDemand7Days} m³ forecast` },
+        { label: "Inventory available", value: `${s.inventoryLevel} m³ in depot` },
+        { label: "Allocation balanced", value: `${c.reduce((a, x) => a + x.deliveryRequired, 0)} m³ / ${s.truckCapacity} m³ truck` },
       ],
       durationMs: 1500,
     },
     {
-      agentName: "Pipeline Agent",
-      icon: Database, color: "text-amber-600",
-      action: "Checking fleet availability & load",
+      agentName: "Pricing Optimisation Agent",
+      icon: CreditCard, color: "text-amber-600",
+      action: "Optimising delivery pricing & surcharges",
+      detail: "Applying contract rate cards · emergency surcharges · fuel index adjustments",
+      dataPoints: [
+        { label: "Base delivery cost", value: `£${s.routeOptions[0].fuelCost} fuel` },
+        { label: "Emergency surcharge", value: c[0].priority === "CRITICAL" ? "£320 applied" : "None" },
+        { label: "Net margin", value: "18.4% optimised" },
+      ],
+      durationMs: 1300,
+    },
+    {
+      agentName: "Plant & Logistics Allocation Agent",
+      icon: Database, color: "text-orange-600",
+      action: "Selecting plant & checking fleet availability",
       detail: "Querying depot manifest · checking truck certification for N₂ · computing fill time",
       dataPoints: [
         { label: "Assigned truck", value: s.truckId },
         { label: "Truck capacity", value: `${s.truckCapacity} m³ liquid N₂` },
         { label: "Depot ready time", value: "T+00:12 from now" },
       ],
-      durationMs: 1300,
+      durationMs: 1400,
     },
     {
-      agentName: "Routing Agent",
+      agentName: "Route Optimisation Agent",
       icon: Navigation, color: "text-emerald-600",
       action: "Optimising multi-stop delivery route",
       detail: "Running constrained shortest-path with priority weights · 3 route options evaluated",
@@ -270,6 +375,18 @@ function buildAgentSteps(s: Scenario): AgentStep[] {
         { label: "All SLAs met?", value: "YES — zero breach risk" },
       ],
       durationMs: 1800,
+    },
+    {
+      agentName: "Risk Agent",
+      icon: Shield, color: "text-red-600",
+      action: "Assessing SLA & contract risk",
+      detail: "Cross-referencing Take-or-Pay clauses, penalty schedules, historical breach data",
+      dataPoints: [
+        { label: "SLA penalty exposure", value: `£${(c[0].penaltyPerHour * c[0].hoursToEmpty).toFixed(0)}K if delayed` },
+        { label: "Contract at risk", value: `£${c[0].contractValue}M — ${c[0].contractType}` },
+        { label: "Credit score", value: `${c[0].creditScore} · ${c[0].paymentDays} day terms` },
+      ],
+      durationMs: 1600,
     },
     {
       agentName: "LENA Orchestrator",
@@ -390,6 +507,140 @@ function KpiCard({ label, value, sub, color, border, Icon }: {
         <p className="mt-2 text-xs text-muted-foreground">{sub}</p>
       </CardContent>
     </Card>
+  );
+}
+
+// ─── Tank Telemetry Tabs ──────────────────────────────────────────────────────
+const REGIONS: Region[] = ["North America", "South America", "Europe", "Africa", "Asia", "Australia"];
+
+function TankCard({ tank }: { tank: RegionalTank }) {
+  const status = tank.fillLevel >= 50 ? "safe" : tank.fillLevel >= 30 ? "warning" : "critical";
+  return (
+    <div className={cn(
+      "rounded-xl border p-4 space-y-3 transition-all duration-200 hover:shadow-md",
+      status === "critical" && "border-red-200 bg-red-50/40",
+      status === "warning" && "border-yellow-200 bg-yellow-50/40",
+      status === "safe" && "border-blue-100 bg-blue-50/20",
+    )}>
+      <div className="flex items-start justify-between">
+        <div>
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <span className="text-[10px] font-mono font-bold text-muted-foreground">{tank.tankId}</span>
+            <span className={cn("h-1.5 w-1.5 rounded-full", {
+              "bg-emerald-500": status === "safe",
+              "bg-yellow-500": status === "warning",
+              "bg-red-500 animate-pulse": status === "critical",
+            })} />
+          </div>
+          <p className="font-semibold text-sm leading-tight">{tank.customerName}</p>
+          <p className="text-[11px] text-muted-foreground">{tank.location}</p>
+        </div>
+        <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide", {
+          "bg-blue-100 text-blue-700": status === "safe",
+          "bg-yellow-100 text-yellow-700": status === "warning",
+          "bg-red-100 text-red-700": status === "critical",
+        })}>
+          {status === "safe" ? "Safe" : status === "warning" ? "Warning" : "Critical"}
+        </span>
+      </div>
+
+      {/* Fill Level Bar */}
+      <div>
+        <div className="flex justify-between text-xs mb-1.5">
+          <span className="text-muted-foreground">Fill Level · {tank.gas}</span>
+          <span className={cn("font-mono font-bold", {
+            "text-blue-600": status === "safe",
+            "text-yellow-600": status === "warning",
+            "text-red-600": status === "critical",
+          })}>{tank.fillLevel}%</span>
+        </div>
+        <div className="h-2 bg-muted rounded-full overflow-hidden">
+          <div
+            className={cn("h-full rounded-full transition-all duration-700", {
+              "bg-blue-500": status === "safe",
+              "bg-yellow-400": status === "warning",
+              "bg-red-500": status === "critical",
+            })}
+            style={{ width: `${tank.fillLevel}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Bottom stats */}
+      <div className="flex items-center justify-between pt-1 border-t border-dashed border-muted-foreground/20">
+        <div className="flex items-center gap-1.5">
+          <Clock className="h-3 w-3 text-muted-foreground" />
+          <span className={cn("text-xs font-semibold", {
+            "text-red-600": tank.hoursToEmpty < 10,
+            "text-yellow-600": tank.hoursToEmpty >= 10 && tank.hoursToEmpty < 24,
+            "text-emerald-600": tank.hoursToEmpty >= 24,
+          })}>Empty in {tank.hoursToEmpty}h</span>
+        </div>
+        <span className="text-[10px] text-muted-foreground">{tank.dailyUsage} m³/day</span>
+      </div>
+    </div>
+  );
+}
+
+function TankTelemetrySection() {
+  const [activeRegion, setActiveRegion] = useState<Region>("Europe");
+
+  const tanks = REGIONAL_TANKS[activeRegion];
+  const criticalCount = tanks.filter(t => t.fillLevel < 30).length;
+  const warningCount = tanks.filter(t => t.fillLevel >= 30 && t.fillLevel < 50).length;
+
+  return (
+    <div className="bg-card rounded-xl border p-5">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="font-semibold text-sm flex items-center gap-2">
+          <Globe className="h-4 w-4 text-primary" /> Global Tank Telemetry
+        </h2>
+        <div className="flex items-center gap-3 text-[11px]">
+          {criticalCount > 0 && (
+            <span className="flex items-center gap-1 bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-semibold">
+              <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
+              {criticalCount} Critical
+            </span>
+          )}
+          {warningCount > 0 && (
+            <span className="flex items-center gap-1 bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-semibold">
+              {warningCount} Warning
+            </span>
+          )}
+          <span className="text-muted-foreground">{tanks.length} tanks monitored</span>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex items-center gap-1 mb-5 border-b border-border pb-0">
+        {REGIONS.map(region => (
+          <button
+            key={region}
+            onClick={() => setActiveRegion(region)}
+            className={cn(
+              "relative px-3 py-2 text-xs font-semibold transition-all duration-200 whitespace-nowrap",
+              "rounded-t-md border-b-2 -mb-px",
+              activeRegion === region
+                ? "text-primary border-primary bg-primary/5"
+                : "text-muted-foreground border-transparent hover:text-foreground hover:border-muted-foreground/30"
+            )}
+          >
+            {region}
+            {/* Critical indicator dot on tab */}
+            {REGIONAL_TANKS[region].some(t => t.fillLevel < 30) && (
+              <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-red-500" />
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* Tank grid */}
+      <div className="grid grid-cols-3 gap-3">
+        {tanks.map(tank => (
+          <TankCard key={tank.tankId} tank={tank} />
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -522,6 +773,10 @@ function DashboardView({ onStartSimulation }: { onStartSimulation: () => void })
           </div>
         </div>
       </div>
+
+      {/* Tank Telemetry Tabs Section */}
+      <TankTelemetrySection />
+
       <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20 rounded-xl p-6 flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -633,7 +888,7 @@ function VotingView({ onVote }: { onVote: (s: ScenarioId) => void }) {
   );
 }
 
-// ─── Agent Working View (10-second animated) ──────────────────────────────────
+// ─── Agent Working View ───────────────────────────────────────────────────────
 function AgentWorkingView({ scenario, onComplete }: { scenario: Scenario; onComplete: () => void }) {
   const steps = buildAgentSteps(scenario);
   const [currentStep, setCurrentStep] = useState(0);
@@ -644,11 +899,12 @@ function AgentWorkingView({ scenario, onComplete }: { scenario: Scenario; onComp
   const logRef = useRef<HTMLDivElement>(null);
 
   const logMessages: string[][] = [
-    ["[Telemetry] Connecting to IoT hub…", "[Telemetry] Tank sensors online · 3/3 customers", "[Telemetry] Alert: Helios Steel at threshold"],
-    ["[Risk] Loading contract database…", "[Risk] Take-or-Pay clause: Helios Steel — £14.2K/hr", "[Risk] Credit check: AA rating · 28-day terms"],
-    ["[Demand] Computing usage curves…", "[Demand] Helios: 38 m³/hr → 2.1h to empty", "[Demand] BioPharm: 9 m³/hr → stable"],
-    ["[Pipeline] Checking depot manifest…", `[Pipeline] ${scenario.truckId} certified N₂ · 100m³`, "[Pipeline] ETA depot departure: T+12min"],
-    ["[Routing] Evaluating 3 route options…", "[Routing] Priority-first optimal · 98 km", "[Routing] All SLAs met · LOW risk"],
+    ["[Telemetry] Connecting to IoT hub…", "[Telemetry] Tank sensors online · 3/3 customers", "[Telemetry] Alert: Customer at threshold"],
+    ["[Demand] Computing usage curves…", "[Demand] 7-day demand forecast: " + scenario.expectedDemand7Days + " m³", "[Demand] Allocations balanced to truck capacity"],
+    ["[Pricing] Loading contract rate cards…", "[Pricing] Emergency surcharge applied", "[Pricing] Net margin: 18.4% optimised"],
+    ["[Plant] Checking depot manifest…", `[Plant] ${scenario.truckId} certified N₂ · ${scenario.truckCapacity}m³`, "[Plant] ETA depot departure: T+12min"],
+    ["[Routing] Evaluating 3 route options…", "[Routing] Priority-first optimal · " + scenario.routeOptions[0].totalKm + " km", "[Routing] All SLAs met · LOW risk"],
+    ["[Risk] Loading contract database…", "[Risk] Take-or-Pay clause active · penalties scheduled", "[Risk] Credit scores assessed"],
     ["[LENA] Synthesising agent outputs…", "[LENA] Decision package ready", "[LENA] Awaiting COO approval"],
   ];
 
@@ -678,7 +934,6 @@ function AgentWorkingView({ scenario, onComplete }: { scenario: Scenario; onComp
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className={cn("rounded-xl border-2 p-5", {
         "border-red-400 bg-red-50/50 dark:bg-red-950/20": scenario.id === "A",
         "border-orange-400 bg-orange-50/50 dark:bg-orange-950/20": scenario.id === "B",
@@ -702,7 +957,6 @@ function AgentWorkingView({ scenario, onComplete }: { scenario: Scenario; onComp
         </div>
       </div>
 
-      {/* Main animated area */}
       <div className="grid grid-cols-2 gap-4">
         {/* Agent pipeline */}
         <div className="bg-card rounded-xl border p-5 space-y-3">
@@ -761,12 +1015,10 @@ function AgentWorkingView({ scenario, onComplete }: { scenario: Scenario; onComp
           })}
         </div>
 
-        {/* Right: logs + live data */}
         <div className="space-y-4">
-          {/* Live log */}
           <div className="bg-card rounded-xl border p-4">
             <h3 className="font-semibold text-xs font-mono uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
-              <Terminal className="h-3 w-3" /> Agent Log
+              <TerminalIcon className="h-3 w-3" /> Agent Log
             </h3>
             <div ref={logRef} className="h-44 overflow-y-auto space-y-1 font-mono text-[11px]">
               {logs.map((l, i) => (
@@ -775,8 +1027,9 @@ function AgentWorkingView({ scenario, onComplete }: { scenario: Scenario; onComp
                   "text-emerald-600": l.includes("certified") || l.includes("optimal") || l.includes("ready"),
                   "text-blue-600": l.includes("[Telemetry]"),
                   "text-violet-600": l.includes("[Demand]"),
-                  "text-amber-600": l.includes("[Pipeline]"),
+                  "text-amber-600": l.includes("[Pricing]") || l.includes("[Plant]"),
                   "text-emerald-700": l.includes("[Routing]"),
+                  "text-red-700": l.includes("[Risk]"),
                   "text-primary": l.includes("[LENA]"),
                   "text-muted-foreground": !l.includes("Alert") && !l.includes("threshold") && !l.includes("certified"),
                 })}>
@@ -788,7 +1041,6 @@ function AgentWorkingView({ scenario, onComplete }: { scenario: Scenario; onComp
             </div>
           </div>
 
-          {/* Live metrics */}
           <div className="bg-card rounded-xl border p-4">
             <h3 className="font-semibold text-xs font-mono uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
               <BarChart3 className="h-3 w-3" /> Critical Metrics Being Evaluated
@@ -819,7 +1071,6 @@ function AgentWorkingView({ scenario, onComplete }: { scenario: Scenario; onComp
             </div>
           </div>
 
-          {/* Overall progress */}
           <div className="bg-card rounded-xl border p-4">
             <div className="flex justify-between text-xs mb-2">
               <span className="font-semibold">{done ? "Analysis complete" : "LENA analysing…"}</span>
@@ -841,15 +1092,17 @@ function AgentWorkingView({ scenario, onComplete }: { scenario: Scenario; onComp
   );
 }
 
-// Need Terminal icon - add it
-function Terminal({ className }: { className?: string }) {
-  return <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>;
+function TerminalIcon({ className }: { className?: string }) {
+  return <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="4 17 10 11 4 5" /><line x1="12" y1="19" x2="20" y2="19" /></svg>;
 }
 
-// ─── Customer Card ────────────────────────────────────────────────────────────
+// ─── Customer Card (updated) ──────────────────────────────────────────────────
 function CustomerCard({ c, rank }: { c: Customer; rank: number }) {
   const urgency = c.hoursToEmpty < 4 ? "IMMINENT" : c.hoursToEmpty < 12 ? "URGENT" : "STABLE";
   const deliveryPct = Math.round((c.deliveryRequired / 100) * 100);
+  const creditColor = c.creditScore >= 750 ? "text-emerald-600" : c.creditScore >= 650 ? "text-blue-600" : "text-orange-600";
+  const creditBg = c.creditScore >= 750 ? "bg-emerald-100 text-emerald-700" : c.creditScore >= 650 ? "bg-blue-100 text-blue-700" : "bg-orange-100 text-orange-700";
+
   return (
     <div className={cn("rounded-xl border p-5 space-y-4", {
       "border-red-300 bg-red-50/50 dark:bg-red-950/20": c.priority === "CRITICAL",
@@ -877,9 +1130,20 @@ function CustomerCard({ c, rank }: { c: Customer; rank: number }) {
         <div><span className="text-muted-foreground">Tank level</span><p className={cn("font-semibold", { "text-red-600": c.currentLevel <= c.threshold })}>{c.currentLevel}% <span className="text-muted-foreground font-normal">(threshold {c.threshold}%)</span></p></div>
         <div><span className="text-muted-foreground">Annual revenue</span><p className="font-semibold">£{c.annualRevenue}M</p></div>
         <div><span className="text-muted-foreground">Contract value</span><p className="font-semibold">£{c.contractValue}M</p></div>
-        <div><span className="text-muted-foreground">Contract type</span><p className="font-semibold">{c.contractType}</p></div>
+        <div>
+          <span className="text-muted-foreground">Credit Score</span>
+          <p className="font-semibold flex items-center gap-1 mt-0.5">
+            <span className={cn("font-bold px-1.5 py-0.5 rounded text-[10px]", creditBg)}>{c.creditScore}</span>
+          </p>
+        </div>
         <div><span className="text-muted-foreground">SLA penalty</span><p className="font-semibold text-red-600">£{c.penaltyPerHour}K/hr</p></div>
-        <div><span className="text-muted-foreground">Credit rating</span><p className="font-semibold">{c.creditRating}</p></div>
+        <div><span className="text-muted-foreground">Last payment</span><p className="font-semibold text-[11px]">{c.lastPaymentDate}<br /><span className="text-muted-foreground font-normal">£{(c.lastPaymentAmount / 1000).toFixed(0)}K</span></p></div>
+        <div><span className="text-muted-foreground">Payment on-time</span>
+          <p className={cn("font-bold text-sm mt-0.5", c.paymentOnTimeAccuracy >= 95 ? "text-emerald-600" : c.paymentOnTimeAccuracy >= 85 ? "text-orange-500" : "text-red-600")}>
+            {c.paymentOnTimeAccuracy}%
+          </p>
+        </div>
+        <div><span className="text-muted-foreground">Distance from plant</span><p className="font-semibold">{c.distanceFromPlant} km</p></div>
         <div><span className="text-muted-foreground">Last delivery</span><p className="font-semibold">{c.lastDelivery}</p></div>
       </div>
       <div className="pt-1">
@@ -911,10 +1175,85 @@ function CustomerCard({ c, rank }: { c: Customer; rank: number }) {
   );
 }
 
-// ─── Simulation View ──────────────────────────────────────────────────────────
+// ─── Demand Allocation Pie (SVG-based) ────────────────────────────────────────
+function DemandAllocationPie({ customers, truckCapacity }: { customers: Customer[]; truckCapacity: number }) {
+  const colors = ["#ef4444", "#f97316", "#3b82f6"];
+  const remainder = Math.max(0, truckCapacity - customers.reduce((s, c) => s + c.deliveryRequired, 0));
+  const total = truckCapacity;
+  const segments = [
+    ...customers.map((c, i) => ({ label: c.name.split(" ")[0], value: c.deliveryRequired, color: colors[i] })),
+    ...(remainder > 0 ? [{ label: "Unallocated", value: remainder, color: "#e5e7eb" }] : []),
+  ];
+
+  let cumAngle = -90;
+  const cx = 80, cy = 80, r = 65, inner = 40;
+  const arcs = segments.map(seg => {
+    const angle = (seg.value / total) * 360;
+    const startAngle = cumAngle;
+    cumAngle += angle;
+    const endAngle = cumAngle;
+    const toRad = (d: number) => (d * Math.PI) / 180;
+    const x1 = cx + r * Math.cos(toRad(startAngle));
+    const y1 = cy + r * Math.sin(toRad(startAngle));
+    const x2 = cx + r * Math.cos(toRad(endAngle));
+    const y2 = cy + r * Math.sin(toRad(endAngle));
+    const ix1 = cx + inner * Math.cos(toRad(startAngle));
+    const iy1 = cy + inner * Math.sin(toRad(startAngle));
+    const ix2 = cx + inner * Math.cos(toRad(endAngle));
+    const iy2 = cy + inner * Math.sin(toRad(endAngle));
+    const large = angle > 180 ? 1 : 0;
+    const path = `M ${ix1} ${iy1} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} L ${ix2} ${iy2} A ${inner} ${inner} 0 ${large} 0 ${ix1} ${iy1} Z`;
+    return { ...seg, path, pct: Math.round((seg.value / total) * 100) };
+  });
+
+  return (
+    <div className="bg-card rounded-xl border p-5">
+      <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-4 flex items-center gap-2">
+        <Droplets className="h-4 w-4 text-primary" /> Demand Allocation — {truckCapacity} m³ Truck
+      </h3>
+      <div className="flex items-center gap-6">
+        <svg width="160" height="160" viewBox="0 0 160 160">
+          {arcs.map((arc, i) => (
+            <path key={i} d={arc.path} fill={arc.color} stroke="white" strokeWidth="2" />
+          ))}
+          <text x="80" y="76" textAnchor="middle" className="font-bold" style={{ fontSize: 18, fill: "currentColor", fontWeight: 700 }}>
+            {customers.reduce((s, c) => s + c.deliveryRequired, 0)}
+          </text>
+          <text x="80" y="90" textAnchor="middle" style={{ fontSize: 9, fill: "#6b7280" }}>m³ allocated</text>
+        </svg>
+        <div className="flex-1 space-y-3">
+          {arcs.map((arc, i) => (
+            <div key={i} className="flex items-center gap-3">
+              <div className="h-3 w-3 rounded-sm shrink-0" style={{ background: arc.color }} />
+              <div className="flex-1">
+                <div className="flex justify-between text-xs">
+                  <span className="font-medium">{arc.label}</span>
+                  <span className="font-mono font-bold">{arc.value} m³ ({arc.pct}%)</span>
+                </div>
+                <div className="h-1.5 bg-muted rounded-full mt-1 overflow-hidden">
+                  <div className="h-full rounded-full" style={{ width: `${arc.pct}%`, background: arc.color }} />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Simulation View (updated) ────────────────────────────────────────────────
 function SimulationView({ scenario, onDecision }: { scenario: Scenario; onDecision: () => void }) {
   const customers = [...scenario.customers].sort((a, b) => a.hoursToEmpty - b.hoursToEmpty);
   const totalDelivery = scenario.customers.reduce((s, c) => s + c.deliveryRequired, 0);
+  const inventoryStatus = scenario.inventoryLevel >= scenario.expectedDemand7Days ? "sufficient" : "low";
+
+  const tagStyles: Record<string, string> = {
+    "LENA Recommended": "bg-primary/10 text-primary border border-primary/30",
+    "Customer Satisfaction": "bg-emerald-100 text-emerald-700 border border-emerald-300",
+    "Quick Delivery": "bg-blue-100 text-blue-700 border border-blue-300",
+    "Cost Efficient": "bg-amber-100 text-amber-700 border border-amber-300",
+  };
 
   return (
     <div className="space-y-6">
@@ -941,6 +1280,32 @@ function SimulationView({ scenario, onDecision }: { scenario: Scenario; onDecisi
         </div>
       </div>
 
+      {/* Inventory / Demand summary cards replacing old scenario box */}
+      <div className="grid grid-cols-4 gap-3">
+        <div className="bg-card rounded-xl border p-4">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Gas Type</p>
+          <p className="font-bold text-lg text-primary">{scenario.gasType}</p>
+          <p className="text-[11px] text-muted-foreground mt-1">This dispatch</p>
+        </div>
+        <div className="bg-card rounded-xl border p-4">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Inventory Level</p>
+          <p className="font-bold text-2xl font-mono">{scenario.inventoryLevel}<span className="text-sm font-normal text-muted-foreground ml-1">m³</span></p>
+          <p className={cn("text-[11px] mt-1 font-semibold", inventoryStatus === "sufficient" ? "text-emerald-600" : "text-orange-600")}>
+            {inventoryStatus === "sufficient" ? "✓ Sufficient" : "⚠ Monitor"}
+          </p>
+        </div>
+        <div className="bg-card rounded-xl border p-4">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Expected Demand (7d)</p>
+          <p className="font-bold text-2xl font-mono">{scenario.expectedDemand7Days}<span className="text-sm font-normal text-muted-foreground ml-1">m³</span></p>
+          <p className="text-[11px] text-muted-foreground mt-1">Forecast period</p>
+        </div>
+        <div className="bg-card rounded-xl border p-4">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Customers to Act On</p>
+          <p className="font-bold text-2xl font-mono">{customers.length}</p>
+          <p className="text-[11px] text-muted-foreground mt-1">{customers.filter(c => c.priority === "CRITICAL").length} Critical · {customers.filter(c => c.priority === "HIGH").length} High</p>
+        </div>
+      </div>
+
       <div className="bg-emerald-50 border border-emerald-300 rounded-xl p-4 flex items-start gap-3">
         <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
         <div>
@@ -949,31 +1314,8 @@ function SimulationView({ scenario, onDecision }: { scenario: Scenario; onDecisi
         </div>
       </div>
 
-      <div className="bg-card rounded-xl border p-5">
-        <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
-          <Truck className="h-4 w-4 text-primary" /> {scenario.truckId} — {scenario.truckCapacity} m³ Allocation
-        </h3>
-        <div className="flex h-7 rounded-lg overflow-hidden gap-px mb-3">
-          {customers.map((c, i) => {
-            const pct = Math.round((c.deliveryRequired / scenario.truckCapacity) * 100);
-            return (
-              <div key={c.id} className={cn("flex items-center justify-center text-[10px] font-bold text-white", {
-                "bg-red-500": i === 0, "bg-orange-400": i === 1, "bg-blue-500": i === 2,
-              })} style={{ width: `${pct}%` }}>{pct}%</div>
-            );
-          })}
-        </div>
-        <div className="flex gap-6 text-xs flex-wrap">
-          {customers.map((c, i) => (
-            <div key={c.id} className="flex items-center gap-1.5">
-              <div className={cn("h-2 w-2 rounded-full", { "bg-red-500": i === 0, "bg-orange-400": i === 1, "bg-blue-500": i === 2 })} />
-              <span className="text-muted-foreground">{c.name.split(" ")[0]}: <span className="font-semibold">{c.deliveryRequired} m³</span></span>
-            </div>
-          ))}
-          <div className="ml-auto text-muted-foreground">Total: <span className={cn("font-semibold", totalDelivery > scenario.truckCapacity ? "text-red-500" : "text-foreground")}>{totalDelivery} m³</span>
-            {totalDelivery > scenario.truckCapacity && <span className="text-red-500 ml-1">⚠ Overload</span>}</div>
-        </div>
-      </div>
+      {/* Truck allocation as pie chart */}
+      <DemandAllocationPie customers={customers} truckCapacity={scenario.truckCapacity} />
 
       <div>
         <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
@@ -995,9 +1337,13 @@ function SimulationView({ scenario, onDecision }: { scenario: Scenario; onDecisi
                 {r.recommended ? <CheckCircle2 className="h-5 w-5 text-primary" /> : <div className="h-5 w-5 rounded-full border-2 border-muted-foreground/30" />}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                <div className="flex items-center gap-2 mb-2 flex-wrap">
                   <span className="font-semibold text-sm">{r.label}</span>
-                  {r.recommended && <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-semibold">LENA Recommended</span>}
+                  {r.tags.map(tag => (
+                    <span key={tag} className={cn("text-[10px] px-2 py-0.5 rounded-full font-semibold", tagStyles[tag] || "bg-muted text-muted-foreground")}>
+                      {tag}
+                    </span>
+                  ))}
                   <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full ml-auto", {
                     "bg-emerald-100 text-emerald-700": r.onTimeRisk === "LOW",
                     "bg-orange-100 text-orange-700": r.onTimeRisk === "MEDIUM",
@@ -1033,10 +1379,8 @@ function SimulationView({ scenario, onDecision }: { scenario: Scenario; onDecisi
   );
 }
 
-// ─── Decision Summary ─────────────────────────────────────────────────────────
-function DecisionView({ scenario, onModify }: {
-  scenario: Scenario; onModify: () => void;
-}) {
+// ─── Decision Summary (reordered) ────────────────────────────────────────────
+function DecisionView({ scenario, onModify }: { scenario: Scenario; onModify: () => void }) {
   const [approved, setApproved] = useState(false);
   const recommended = scenario.routeOptions.find(r => r.recommended)!;
   const baseline = scenario.routeOptions[1];
@@ -1045,7 +1389,12 @@ function DecisionView({ scenario, onModify }: {
   const totalContract = customers.reduce((s, c) => s + c.contractValue, 0);
   const penaltyAvertedMax = customers[0].penaltyPerHour * 8;
 
-  function handleApprove() { setApproved(true); }
+  const tagStyles: Record<string, string> = {
+    "LENA Recommended": "bg-primary/10 text-primary border border-primary/30",
+    "Customer Satisfaction": "bg-emerald-100 text-emerald-700 border border-emerald-300",
+    "Quick Delivery": "bg-blue-100 text-blue-700 border border-blue-300",
+    "Cost Efficient": "bg-amber-100 text-amber-700 border border-amber-300",
+  };
 
   return (
     <div className="space-y-6">
@@ -1062,19 +1411,89 @@ function DecisionView({ scenario, onModify }: {
         </div>
       </div>
 
-      {/* Situation */}
+      {/* 1. Demand Allocation Pie Chart (replaces Situation) */}
+      <DemandAllocationPie customers={customers} truckCapacity={scenario.truckCapacity} />
+
+      {/* 2. Recommended Delivery Sequence */}
       <div className="bg-card rounded-xl border p-5">
-        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Situation</h3>
-        <p className="text-sm">{scenario.description}</p>
-        <div className="mt-4 grid grid-cols-4 gap-4 text-xs">
-          <div><span className="text-muted-foreground">Customers affected</span><p className="font-bold text-2xl">{customers.length}</p></div>
-          <div><span className="text-muted-foreground">Most critical</span><p className="font-semibold mt-1">{customers[0].name}</p></div>
-          <div><span className="text-muted-foreground">Time-to-empty</span><p className="font-bold text-2xl text-red-600 font-mono">{customers[0].hoursToEmpty.toFixed(1)}h</p></div>
-          <div><span className="text-muted-foreground">Total revenue at risk</span><p className="font-bold text-2xl text-primary">£{totalRevenue.toFixed(1)}M</p></div>
+        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+          Recommended Delivery Sequence — {scenario.truckId}
+        </h3>
+        <div className="space-y-3">
+          {customers.map((c, i) => (
+            <div key={c.id} className="flex gap-4 items-start">
+              <div className={cn("h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0", {
+                "bg-red-500": i === 0, "bg-orange-400": i === 1, "bg-blue-500": i === 2,
+              })}>{i + 1}</div>
+              <div className="flex-1 p-3 rounded-lg bg-muted/40">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-sm">{c.name}</span>
+                  <PriorityBadge priority={c.priority} />
+                </div>
+                <div className="flex flex-wrap gap-4 mt-1.5 text-xs text-muted-foreground">
+                  <span>Deliver: <span className="font-mono font-semibold text-foreground">{c.deliveryRequired} m³ N₂</span></span>
+                  <span>Buffer: <span className="font-semibold text-foreground">{c.hoursToEmpty.toFixed(1)} hrs left</span></span>
+                  <span>Revenue: <span className="font-semibold text-foreground">£{c.annualRevenue}M/yr</span></span>
+                  <span>Credit Score: <span className="font-semibold text-foreground">{c.creditScore}</span></span>
+                  <span>Penalty: <span className="font-semibold text-red-600">£{c.penaltyPerHour}K/hr if missed</span></span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  {i === 0 && "Critical — deliver first. Threshold breached. Take-or-Pay clause active."}
+                  {i === 1 && "High priority — deliver second. Sufficient buffer for travel time. SLA protected."}
+                  {i === 2 && "Stable — deliver last. Tank level within safe window. No breach risk."}
+                </p>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Financial impact */}
+      {/* 3. Customer Credit Risk Profile */}
+      <div className="bg-card rounded-xl border p-5">
+        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Customer Credit Risk Profile</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b text-muted-foreground">
+                <th className="text-left py-2 pr-3 font-medium">Customer</th>
+                <th className="text-left py-2 pr-3 font-medium">Credit Score</th>
+                <th className="text-left py-2 pr-3 font-medium">Payment Terms</th>
+                <th className="text-left py-2 pr-3 font-medium">Last Payment</th>
+                <th className="text-left py-2 pr-3 font-medium">On-Time %</th>
+                <th className="text-left py-2 pr-3 font-medium">Distance (Plant)</th>
+                <th className="text-left py-2 font-medium">SLA Penalty/hr</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {customers.map(c => {
+                const scoreBg = c.creditScore >= 750 ? "bg-emerald-100 text-emerald-700" : c.creditScore >= 650 ? "bg-blue-100 text-blue-700" : "bg-orange-100 text-orange-700";
+                return (
+                  <tr key={c.id}>
+                    <td className="py-2.5 pr-3 font-semibold">{c.name}</td>
+                    <td className="py-2.5 pr-3">
+                      <span className={cn("font-bold px-1.5 py-0.5 rounded text-[10px]", scoreBg)}>{c.creditScore}</span>
+                    </td>
+                    <td className="py-2.5 pr-3 text-muted-foreground">{c.paymentDays} days</td>
+                    <td className="py-2.5 pr-3">
+                      <p className="font-semibold">{c.lastPaymentDate}</p>
+                      <p className="text-muted-foreground">£{(c.lastPaymentAmount / 1000).toFixed(0)}K</p>
+                    </td>
+                    <td className="py-2.5 pr-3">
+                      <span className={cn("font-bold", c.paymentOnTimeAccuracy >= 95 ? "text-emerald-600" : c.paymentOnTimeAccuracy >= 85 ? "text-orange-500" : "text-red-600")}>
+                        {c.paymentOnTimeAccuracy}%
+                      </span>
+                    </td>
+                    <td className="py-2.5 pr-3 text-muted-foreground">{c.distanceFromPlant} km</td>
+                    <td className="py-2.5 text-red-600 font-semibold">£{c.penaltyPerHour}K</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* 4. Financial Impact Analysis */}
       <div className="bg-card rounded-xl border p-5">
         <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Financial Impact Analysis</h3>
         <div className="grid grid-cols-2 gap-4">
@@ -1105,7 +1524,7 @@ function DecisionView({ scenario, onModify }: {
         </div>
       </div>
 
-      {/* Factors considered incl. credit risk */}
+      {/* 5. Factors Considered by LENA */}
       <div className="bg-card rounded-xl border p-5">
         <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Factors Considered by LENA</h3>
         <div className="grid grid-cols-2 gap-3">
@@ -1113,8 +1532,8 @@ function DecisionView({ scenario, onModify }: {
             { label: "Telemetry time-to-empty", value: `${customers[0].hoursToEmpty}h critical · ${customers[1].hoursToEmpty}h high`, icon: Thermometer },
             { label: "Contract type & penalties", value: `Take-or-Pay £${customers[0].penaltyPerHour}K/hr · Long-Term SLAs`, icon: FileText },
             { label: "Annual revenue weighting", value: `£${customers.map(c => c.annualRevenue + "M").join(" · ")}`, icon: BarChart3 },
-            { label: "Credit risk assessment", value: `${customers.map(c => c.name.split(" ")[0] + ": " + c.creditRating).join(" · ")}`, icon: CreditCard },
-            { label: "Payment terms", value: `${customers.map(c => c.paymentDays + "-day terms").join(" · ")}`, icon: Clock },
+            { label: "Credit risk assessment", value: `${customers.map(c => c.name.split(" ")[0] + ": " + c.creditScore).join(" · ")}`, icon: CreditCard },
+            { label: "Payment terms & on-time accuracy", value: `${customers.map(c => c.paymentOnTimeAccuracy + "% OTA").join(" · ")}`, icon: Clock },
             { label: "Route & fuel cost", value: `${recommended.totalKm} km · £${recommended.fuelCost} fuel`, icon: Navigation },
             { label: "Carbon emissions", value: `${recommended.co2kg} kg CO₂ · ${((recommended.co2kg / baseline.co2kg - 1) * 100).toFixed(0)}% vs baseline`, icon: Zap },
             { label: "Road & weather conditions", value: scenario.id === "C" ? "A63 flooding — M62 reroute active" : "Normal — no disruptions", icon: AlertTriangle },
@@ -1130,44 +1549,7 @@ function DecisionView({ scenario, onModify }: {
         </div>
       </div>
 
-      {/* Credit risk table */}
-      <div className="bg-card rounded-xl border p-5">
-        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Customer Credit Risk Profile</h3>
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="border-b text-muted-foreground">
-                <th className="text-left py-2 pr-3 font-medium">Customer</th>
-                <th className="text-left py-2 pr-3 font-medium">Credit Rating</th>
-                <th className="text-left py-2 pr-3 font-medium">Payment Terms</th>
-                <th className="text-left py-2 pr-3 font-medium">Contract Value</th>
-                <th className="text-left py-2 pr-3 font-medium">Annual Revenue</th>
-                <th className="text-left py-2 font-medium">SLA Penalty/hr</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {customers.map(c => (
-                <tr key={c.id}>
-                  <td className="py-2.5 pr-3 font-semibold">{c.name}</td>
-                  <td className="py-2.5 pr-3">
-                    <span className={cn("font-bold px-1.5 py-0.5 rounded text-[10px]", {
-                      "bg-emerald-100 text-emerald-700": c.creditRating === "AAA" || c.creditRating === "AA",
-                      "bg-blue-100 text-blue-700": c.creditRating === "A",
-                      "bg-yellow-100 text-yellow-700": c.creditRating === "BBB",
-                    })}>{c.creditRating}</span>
-                  </td>
-                  <td className="py-2.5 pr-3 text-muted-foreground">{c.paymentDays} days</td>
-                  <td className="py-2.5 pr-3 font-semibold">£{c.contractValue}M</td>
-                  <td className="py-2.5 pr-3 font-semibold">£{c.annualRevenue}M</td>
-                  <td className="py-2.5 text-red-600 font-semibold">£{c.penaltyPerHour}K</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Route comparison */}
+      {/* 6. Route Comparison */}
       <div className="bg-card rounded-xl border p-5">
         <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Route Comparison</h3>
         <div className="overflow-x-auto">
@@ -1202,7 +1584,7 @@ function DecisionView({ scenario, onModify }: {
         </div>
       </div>
 
-      {/* Decision impact */}
+      {/* 7. Impact of This Decision */}
       <div className="bg-card rounded-xl border p-5">
         <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Impact of This Decision</h3>
         <div className="grid grid-cols-3 gap-3">
@@ -1221,40 +1603,6 @@ function DecisionView({ scenario, onModify }: {
         </div>
       </div>
 
-      {/* Delivery sequence */}
-      <div className="bg-card rounded-xl border p-5">
-        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-          Recommended Delivery Sequence — {scenario.truckId}
-        </h3>
-        <div className="space-y-3">
-          {customers.map((c, i) => (
-            <div key={c.id} className="flex gap-4 items-start">
-              <div className={cn("h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0", {
-                "bg-red-500": i === 0, "bg-orange-400": i === 1, "bg-blue-500": i === 2,
-              })}>{i + 1}</div>
-              <div className="flex-1 p-3 rounded-lg bg-muted/40">
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-sm">{c.name}</span>
-                  <PriorityBadge priority={c.priority} />
-                </div>
-                <div className="flex flex-wrap gap-4 mt-1.5 text-xs text-muted-foreground">
-                  <span>Deliver: <span className="font-mono font-semibold text-foreground">{c.deliveryRequired} m³ N₂</span></span>
-                  <span>Buffer: <span className="font-semibold text-foreground">{c.hoursToEmpty.toFixed(1)} hrs left</span></span>
-                  <span>Revenue: <span className="font-semibold text-foreground">£{c.annualRevenue}M/yr</span></span>
-                  <span>Credit: <span className="font-semibold text-foreground">{c.creditRating}</span></span>
-                  <span>Penalty: <span className="font-semibold text-red-600">£{c.penaltyPerHour}K/hr if missed</span></span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1.5">
-                  {i === 0 && "Critical — deliver first. Threshold breached. Take-or-Pay clause active."}
-                  {i === 1 && "High priority — deliver second. Sufficient buffer for travel time. SLA protected."}
-                  {i === 2 && "Stable — deliver last. Tank level within safe window. No breach risk."}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* Human approval */}
       {!approved ? (
         <div className="bg-primary/5 border-2 border-primary/30 rounded-xl p-6">
@@ -1268,7 +1616,7 @@ function DecisionView({ scenario, onModify }: {
                 You may modify the delivery sequence or allocation before approving.
               </p>
               <div className="mt-4 flex gap-3">
-                <Button className="gap-2" onClick={handleApprove}>
+                <Button className="gap-2" onClick={() => setApproved(true)}>
                   <CheckCircle2 className="h-4 w-4" /> Approve & Dispatch {scenario.truckId}
                 </Button>
                 <Button variant="outline" className="gap-2" onClick={onModify}>
@@ -1305,7 +1653,7 @@ function DecisionView({ scenario, onModify }: {
               <p className="font-bold text-emerald-600 text-lg font-mono">{customers.length} sites</p>
             </div>
           </div>
-          <p className="text-xs text-emerald-600">Returning to dashboard…</p>
+          <p className="text-xs text-emerald-600">Dispatch confirmed · All agents standing by.</p>
         </div>
       )}
     </div>
@@ -1335,7 +1683,6 @@ export default function SupplyChain() {
           }}
         />
         <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Topbar */}
           <div className="h-4 flex items-center px-4 gap-3 shrink-0 bg-background">
             <SidebarTrigger className="h-8 w-8" />
             <div className="h-4 w-px bg-border" />
@@ -1343,10 +1690,10 @@ export default function SupplyChain() {
               <span>Core</span>
               <ChevronRight className="h-3 w-3" />
               <span>Supply Chain</span>
-              {(view === "agent-working") && <><ChevronRight className="h-3 w-3" /><span className="text-foreground">LENA Agents Working</span></>}
-              {(view === "simulation") && <><ChevronRight className="h-3 w-3" /><span className="text-foreground">Simulation</span></>}
-              {(view === "voting") && <><ChevronRight className="h-3 w-3" /><span className="text-foreground">Audience Vote</span></>}
-              {(view === "decision") && <><ChevronRight className="h-3 w-3" /><span className="text-foreground">Decision Summary</span></>}
+              {view === "agent-working" && <><ChevronRight className="h-3 w-3" /><span className="text-foreground">LENA Agents Working</span></>}
+              {view === "simulation" && <><ChevronRight className="h-3 w-3" /><span className="text-foreground">Simulation</span></>}
+              {view === "voting" && <><ChevronRight className="h-3 w-3" /><span className="text-foreground">Audience Vote</span></>}
+              {view === "decision" && <><ChevronRight className="h-3 w-3" /><span className="text-foreground">Decision Summary</span></>}
             </nav>
             {scenario && view !== "dashboard" && (
               <div className="ml-auto flex items-center gap-2">
@@ -1360,7 +1707,6 @@ export default function SupplyChain() {
             )}
           </div>
 
-          {/* Content */}
           <div className="flex-1 overflow-y-auto">
             <div className="max-w-6xl mx-auto px-6 py-6">
               {view === "dashboard" && <DashboardView onStartSimulation={() => setView("voting")} />}
@@ -1372,10 +1718,7 @@ export default function SupplyChain() {
                 <SimulationView scenario={scenario} onDecision={() => setView("decision")} />
               )}
               {view === "decision" && scenario && (
-                <DecisionView
-                  scenario={scenario}
-                  onModify={() => setView("simulation")}
-                />
+                <DecisionView scenario={scenario} onModify={() => setView("simulation")} />
               )}
             </div>
           </div>
