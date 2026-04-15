@@ -6,15 +6,14 @@ import {
   SidebarProvider, SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, Truck, GitBranch, TrendingUp, Radio,
   AlertTriangle, FileText, Users, CheckCircle2, Clock,
   Thermometer, Zap, ArrowRight, ChevronRight, MapPin,
   AlertCircle, BarChart3, Navigation, Package, Brain,
-  Shield, CreditCard, Activity, Wifi, Database, Search,
-  RotateCcw, CheckSquare, XCircle, TrendingDown,
+  Shield, CreditCard, Activity, Wifi, Database,
+  RotateCcw,
 } from "lucide-react";
 
 type ScenarioId = "A" | "B" | "C";
@@ -47,7 +46,7 @@ interface RouteOption {
   id: string; label: string; stops: string[];
   totalKm: number; totalTime: number; fuelCost: number;
   co2kg: number; onTimeRisk: "LOW" | "MEDIUM" | "HIGH";
-  recommended: boolean;
+  recommended?: boolean;
 }
 
 // ─── Agent step type ──────────────────────────────────────────────────────────
@@ -673,8 +672,6 @@ function AgentWorkingView({ scenario, onComplete }: { scenario: Scenario; onComp
     return () => clearInterval(iv);
   }, [currentStep]);
 
-  const totalMs = steps.reduce((s, x) => s + x.durationMs, 0);
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -793,7 +790,7 @@ function AgentWorkingView({ scenario, onComplete }: { scenario: Scenario; onComp
               <BarChart3 className="h-3 w-3" /> Critical Metrics Being Evaluated
             </h3>
             <div className="grid grid-cols-2 gap-2">
-              {scenario.customers.map((c, i) => (
+              {scenario.customers.map((c) => (
                 <div key={c.id} className={cn("p-2.5 rounded-lg text-[11px]", {
                   "bg-red-50 border border-red-200": c.priority === "CRITICAL",
                   "bg-orange-50 border border-orange-200": c.priority === "HIGH",
