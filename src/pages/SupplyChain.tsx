@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import USER_NAME from "@/data/data";
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup,
   SidebarGroupContent, SidebarGroupLabel, SidebarHeader,
@@ -6,6 +7,7 @@ import {
   SidebarProvider, SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, Truck, GitBranch, TrendingUp, Radio,
@@ -349,10 +351,10 @@ function SupplyChainSidebar({ activeView, onNavigate, scenarioId }: {
       <SidebarFooter className="border-t border-sidebar-border p-3">
         <div className="flex items-center gap-3 px-2 py-2 rounded-md hover:bg-sidebar-accent transition-colors">
           <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-            <span className="text-xs font-semibold text-primary">COO</span>
+            <span className="text-xs font-semibold text-primary">{USER_NAME.charAt(0)}</span>
           </div>
           <div className="flex flex-col min-w-0">
-            <span className="text-sm font-medium leading-tight">John Smith</span>
+            <span className="text-sm font-medium leading-tight">{USER_NAME}</span>
             <span className="text-[11px] text-muted-foreground leading-tight">Chief Operating Officer</span>
           </div>
         </div>
@@ -372,13 +374,22 @@ function PriorityBadge({ priority }: { priority: Customer["priority"] }) {
   );
 }
 
-function KpiCard({ label, value, sub, color }: { label: string; value: string; sub: string; color: string }) {
+function KpiCard({ label, value, sub, color, border, Icon }: {
+  label: string; value: string; sub: string; color: string; border: string; Icon: typeof Truck;
+}) {
   return (
-    <div className="bg-card rounded-xl border p-5 flex flex-col gap-1">
-      <span className="text-xs text-muted-foreground uppercase tracking-widest font-mono">{label}</span>
-      <span className={cn("text-3xl font-bold", color)}>{value}</span>
-      <span className="text-xs text-muted-foreground">{sub}</span>
-    </div>
+    <Card className={cn("border-l-4 border-border bg-card rounded-l-none rounded-xs", border)}>
+      <CardContent className="px-4 py-4">
+        <div className="mb-2 flex items-center gap-2">
+          <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
+            {label}
+          </p>
+        </div>
+        <p className={cn("font-heading text-3xl font-bold tracking-tight", color)}>{value}</p>
+        <p className="mt-2 text-xs text-muted-foreground">{sub}</p>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -397,10 +408,10 @@ function DashboardView({ onStartSimulation }: { onStartSimulation: () => void })
         </div>
       </div>
       <div className="grid grid-cols-4 gap-4">
-        <KpiCard label="Active Deliveries" value="847" sub="+12% vs yesterday" color="text-foreground" />
-        <KpiCard label="Production Plants" value="612" sub="All online · monitored" color="text-emerald-600" />
-        <KpiCard label="Inventory Level" value="94%" sub="Optimal across network" color="text-blue-600" />
-        <KpiCard label="AI Decisions/Hour" value="2,456" sub="+8% efficiency gain" color="text-violet-600" />
+        <KpiCard label="Active Deliveries" value="847" sub="+12% vs yesterday" color="text-foreground" border="border-l-primary" Icon={Truck} />
+        <KpiCard label="Production Plants" value="612" sub="All online · monitored" color="text-chart-2" border="border-l-chart-2" Icon={Activity} />
+        <KpiCard label="Inventory Level" value="94%" sub="Optimal across network" color="text-primary" border="border-l-primary" Icon={Package} />
+        <KpiCard label="AI Decisions/Hour" value="2,456" sub="+8% efficiency gain" color="text-accent" border="border-l-accent" Icon={Brain} />
       </div>
       <div className="grid grid-cols-3 gap-4">
         <div className="col-span-2 bg-card rounded-xl border p-5">
