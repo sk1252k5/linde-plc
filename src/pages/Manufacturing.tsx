@@ -25,7 +25,6 @@ import {
   ChevronRight,
   Gauge,
   Cpu,
-  TrendingDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
