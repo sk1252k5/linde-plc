@@ -302,14 +302,7 @@ function SupplyChainSidebar({ activeView, onNavigate, scenarioId }: {
   return (
     <Sidebar className="border-r">
       <SidebarHeader className="px-4 py-3.5 border-b border-sidebar-border">
-        <div className="flex items-center gap-2">
-          <span className="font-bold text-sm tracking-wide text-foreground">LENA</span>
-          <div className="h-4 w-px bg-border" />
-          <span className="font-mono text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-            Powered by IBM Watsonx
-          </span>
-        </div>
-        <p className="text-[10px] text-muted-foreground mt-1 font-mono uppercase tracking-wider">
+        <p className="font-heading text-sm font-bold tracking-wide text-foreground">
           Supply Chain Control Tower
         </p>
       </SidebarHeader>
@@ -1030,8 +1023,8 @@ function SimulationView({ scenario, onDecision }: { scenario: Scenario; onDecisi
 }
 
 // ─── Decision Summary ─────────────────────────────────────────────────────────
-function DecisionView({ scenario, onApprove, onModify }: {
-  scenario: Scenario; onApprove: () => void; onModify: () => void;
+function DecisionView({ scenario, onModify }: {
+  scenario: Scenario; onModify: () => void;
 }) {
   const [approved, setApproved] = useState(false);
   const recommended = scenario.routeOptions.find(r => r.recommended)!;
@@ -1041,7 +1034,7 @@ function DecisionView({ scenario, onApprove, onModify }: {
   const totalContract = customers.reduce((s, c) => s + c.contractValue, 0);
   const penaltyAvertedMax = customers[0].penaltyPerHour * 8;
 
-  function handleApprove() { setApproved(true); setTimeout(onApprove, 2000); }
+  function handleApprove() { setApproved(true); }
 
   return (
     <div className="space-y-6">
@@ -1332,7 +1325,7 @@ export default function SupplyChain() {
         />
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Topbar */}
-          <div className="h-12 border-b flex items-center px-4 gap-3 shrink-0 bg-background">
+          <div className="h-4 flex items-center px-4 gap-3 shrink-0 bg-background">
             <SidebarTrigger className="h-8 w-8" />
             <div className="h-4 w-px bg-border" />
             <nav className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -1370,7 +1363,6 @@ export default function SupplyChain() {
               {view === "decision" && scenario && (
                 <DecisionView
                   scenario={scenario}
-                  onApprove={() => { setScenario(null); setView("dashboard"); }}
                   onModify={() => setView("simulation")}
                 />
               )}
