@@ -7,6 +7,7 @@ import { ThemeToggle } from "./ThemeToggle";
 
 const PAGE_META: Record<string, { title: string; section: string }> = {
   "/vision-panel": { title: "Vision Panel", section: "Core" },
+  "/nurostack": { title: "NuroStack", section: "Core" },
   "/consolidated-dashboard/nexus": { title: "Nexus", section: "Core" },
   "/consolidated-dashboard/nurovault": { title: "NuroVault", section: "Core" },
   "/consolidated-dashboard/nuroforge": { title: "NuroForge", section: "Core" },
