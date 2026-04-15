@@ -849,11 +849,7 @@ function TelemetryConnectView({ scenario, onComplete }: { scenario: Scenario; on
           const isActive = idx === activeIdx && !allDone && progress[idx] < 100;
           const isDone = progress[idx] >= 100;
           const isPending = idx > activeIdx && progress[idx] === 0;
-          const statusColor = customer.priority === "CRITICAL"
-          ? "border-red-300 bg-red-50/50"
-          : customer.priority === "HIGH"
-          ? "border-orange-300 bg-orange-50/50"
-          : "border-border bg-card";
+          const statusColor = "border-border bg-card";
           return (
             <div
               key={customer.id}
@@ -867,7 +863,6 @@ function TelemetryConnectView({ scenario, onComplete }: { scenario: Scenario; on
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <PriorityBadge priority={customer.priority} />
                     {isActive && (
                       <span className="text-[10px] font-mono text-primary animate-pulse font-semibold">Connecting…</span>
                     )}
@@ -882,16 +877,6 @@ function TelemetryConnectView({ scenario, onComplete }: { scenario: Scenario; on
                   </div>
                   <h3 className="font-semibold text-base">{customer.name}</h3>
                   <p className="text-xs text-muted-foreground">{customer.location}</p>
-                </div>
-                <div className="text-right">
-                  <div className={cn("text-2xl font-bold font-mono", {
-                    "text-red-600": customer.hoursToEmpty < 4,
-                    "text-orange-500": customer.hoursToEmpty >= 4 && customer.hoursToEmpty < 12,
-                    "text-emerald-600": customer.hoursToEmpty >= 12,
-                  })}>
-                    {customer.hoursToEmpty}h
-                  </div>
-                  <div className="text-[10px] text-muted-foreground">to empty</div>
                 </div>
               </div>
 
@@ -1072,51 +1057,7 @@ function AgentWorkingView({ scenario, onComplete }: { scenario: Scenario; onComp
             </div>
           </div>
 
-          <div className="bg-card rounded-xl border p-4">
-            <h3 className="font-semibold text-xs font-mono uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
-              <BarChart3 className="h-3 w-3" /> Critical Metrics Being Evaluated
-            </h3>
-            <div className="grid grid-cols-2 gap-2">
-              {scenario.customers.map((c) => (
-                <div key={c.id} className={cn("p-2.5 rounded-lg text-[11px]", {
-                  "bg-red-50 border border-red-200": c.priority === "CRITICAL",
-                  "bg-orange-50 border border-orange-200": c.priority === "HIGH",
-                  "bg-muted/40 border": c.priority === "MEDIUM",
-                })}>
-                  <p className="font-semibold truncate">{c.name.split(" ")[0]}</p>
-                  <p className={cn("font-mono font-bold", {
-                    "text-red-600": c.hoursToEmpty < 4,
-                    "text-orange-500": c.hoursToEmpty >= 4 && c.hoursToEmpty < 12,
-                    "text-emerald-600": c.hoursToEmpty >= 12,
-                  })}>{c.hoursToEmpty}h</p>
-                  <p className="text-muted-foreground">{c.currentLevel}% · {c.threshold}% threshold</p>
-                </div>
-              ))}
-              <div className="p-2.5 rounded-lg bg-primary/5 border border-primary/20 text-[11px]">
-                <p className="text-primary font-semibold">Total at risk</p>
-                <p className="font-mono font-bold text-primary">
-                  £{scenario.customers.reduce((a, c) => a + c.annualRevenue, 0).toFixed(1)}M/yr
-                </p>
-                <p className="text-muted-foreground">annual revenue</p>
-              </div>
-            </div>
-          </div>
 
-          <div className="bg-card rounded-xl border p-4">
-            <div className="flex justify-between text-xs mb-2">
-              <span className="font-semibold">{done ? "Analysis complete" : "LENA analysing…"}</span>
-              <span className="font-mono text-muted-foreground">{completedSteps.length}/{steps.length} agents</span>
-            </div>
-            <div className="h-2 bg-muted rounded-full overflow-hidden">
-              <div className={cn("h-full rounded-full transition-all duration-500", done ? "bg-emerald-500" : "bg-primary")}
-                style={{ width: `${(completedSteps.length / steps.length) * 100}%` }} />
-            </div>
-            {done && (
-              <p className="text-xs text-emerald-600 font-semibold mt-2 text-center animate-pulse">
-                ✓ Route optimised · Proceeding to simulation…
-              </p>
-            )}
-          </div>
         </div>
       </div>
     </div>

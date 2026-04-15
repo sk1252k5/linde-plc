@@ -13,6 +13,7 @@ import ItCybersecurity from "./pages/It & cybersecurity";
 import EosAssistant from "./pages/EosAssistant";
 import Settings from "./pages/Settings";
 import VisionPanel from "./VisionPanel";
+//import NuroForge from ".pages/NuroForge";
 import NuroStack from "./pages/NuroStack";
 import ConsolidatedDashboard from "./pages/ConsolidatedDashboard";
 import VotingPage from "./pages/VotingPage"; // ← NEW
@@ -32,6 +33,7 @@ export const Routes: RouteObject[] = [
         children: [
           { path: "vision-panel", element: <VisionPanel /> },
           { path: "nurostack", element: <NuroStack /> },
+          //{ path: "nuroforge", element: <nuroforge /> },
         ],
       },
       {
