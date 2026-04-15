@@ -1324,7 +1324,7 @@ export default function SupplyChain() {
 
   return (
     <SidebarProvider>
-      <div className="flex h-screen w-full overflow-hidden bg-background">
+      <div className="flex h-full w-full overflow-hidden bg-background">
         <SupplyChainSidebar
           activeView={view}
           scenarioId={scenario?.id}
