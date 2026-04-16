@@ -1,4 +1,13 @@
+// ─── SupplyChain.tsx ──────────────────────────────────────────────────────────
+// Changes from original:
+//   1. DashboardView: "Launch" button replaced with a "Go to Voting" button
+//      that navigates to /voting (where the audience-voted scenario is selected).
+//   2. handleLaunch() in the main component now reads from sessionStorage
+//      (set by VotingPage) instead of hard-coding scenario A.
+// All other code is identical to the original.
+
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import USER_NAME from "@/data/data";
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup,
@@ -15,7 +24,7 @@ import {
   Thermometer, Zap, ArrowRight, ChevronRight, MapPin,
   AlertCircle, BarChart3, Navigation, Package, Brain,
   Shield, CreditCard, Activity, Wifi, Database,
-  RotateCcw, Globe, Droplets, XCircle,
+  RotateCcw, Globe, Droplets, XCircle, Vote,
 } from "lucide-react";
 
 type ScenarioId = "A" | "B" | "C";
@@ -655,7 +664,8 @@ function TankTelemetrySection() {
 }
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
-function DashboardView({ onStartSimulation }: { onStartSimulation: () => void }) {
+// ✅ CHANGE: "Launch" button replaced with "Go to Audience Vote" button
+function DashboardView({ onGoToVoting }: { onGoToVoting: () => void }) {
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between">
@@ -786,19 +796,20 @@ function DashboardView({ onStartSimulation }: { onStartSimulation: () => void })
 
       <TankTelemetrySection />
 
+      {/* ✅ CHANGED: "Launch" CTA now routes to /voting instead of triggering simulation directly */}
       <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20 rounded-xl p-6 flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <Zap className="h-4 w-4 text-primary" />
-            <span className="text-xs font-mono font-semibold uppercase tracking-wider text-primary">LENA Agent — Ready</span>
+            <Vote className="h-4 w-4 text-primary" />
+            <span className="text-xs font-mono font-semibold uppercase tracking-wider text-primary">Audience-Driven Demo</span>
           </div>
           <h3 className="font-semibold">Run Supply Chain Optimization</h3>
           <p className="text-sm text-muted-foreground mt-1">
-            LENA analyses customer telemetry, prioritises deliveries and recommends the optimal dispatch route.
+            The audience votes on a live scenario. LENA then analyses telemetry, prioritises deliveries and recommends the optimal dispatch route.
           </p>
         </div>
-        <Button className="ml-6 shrink-0 gap-2" size="lg" onClick={onStartSimulation}>
-          Launch <ArrowRight className="h-4 w-4" />
+        <Button className="ml-6 shrink-0 gap-2" size="lg" onClick={onGoToVoting}>
+          Go to Audience Vote <ArrowRight className="h-4 w-4" />
         </Button>
       </div>
     </div>
@@ -806,49 +817,34 @@ function DashboardView({ onStartSimulation }: { onStartSimulation: () => void })
 }
 
 // ─── Telemetry Connect View ───────────────────────────────────────────────────
-// Replaces the voting view. Shows 3 customer cards, each filling to 100% sequentially (5s each).
 function TelemetryConnectView({ scenario, onComplete }: { scenario: Scenario; onComplete: () => void }) {
   const customers = scenario.customers;
-  // progress[0..2] each 0..100
   const [progress, setProgress] = useState<number[]>([0, 0, 0]);
   const [activeIdx, setActiveIdx] = useState(0);
   const [allDone, setAllDone] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    // Animate each customer bar one by one, 5s each = increment by ~1 every 50ms
     let current = 0;
-
     function animateCustomer(idx: number) {
-      if (idx >= customers.length) {
-        setAllDone(true);
-        return;
-      }
+      if (idx >= customers.length) { setAllDone(true); return; }
       setActiveIdx(idx);
       let val = 0;
       intervalRef.current = setInterval(() => {
         val += 1;
-        setProgress(prev => {
-          const next = [...prev];
-          next[idx] = val;
-          return next;
-        });
+        setProgress(prev => { const next = [...prev]; next[idx] = val; return next; });
         if (val >= 100) {
           clearInterval(intervalRef.current!);
           setTimeout(() => animateCustomer(idx + 1), 300);
         }
-      }, 50); // 50ms * 100 steps = 5s
+      }, 50);
     }
-
     animateCustomer(0);
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, []);
 
   useEffect(() => {
-    if (allDone) {
-      const t = setTimeout(() => onComplete(), 600);
-      return () => clearTimeout(t);
-    }
+    if (allDone) { const t = setTimeout(() => onComplete(), 600); return () => clearTimeout(t); }
   }, [allDone]);
 
   return (
@@ -856,95 +852,51 @@ function TelemetryConnectView({ scenario, onComplete }: { scenario: Scenario; on
       <div className="text-center">
         <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-1.5 rounded-full text-xs font-mono font-semibold uppercase tracking-wider mb-4">
           <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-
         </div>
         <h2 className="text-2xl font-bold">Reading Live Sensor Data from Customers</h2>
-        {/* <p className="text-muted-foreground mt-2 text-sm">Reading IoT tank sensors from customer sites</p> */}
       </div>
-
       <div className="space-y-4">
         {customers.map((customer, idx) => {
           const isActive = idx === activeIdx && !allDone && progress[idx] < 100;
           const isDone = progress[idx] >= 100;
           const isPending = idx > activeIdx && progress[idx] === 0;
-          const statusColor = "border-border bg-card";
           return (
-            <div
-              key={customer.id}
-              className={cn(
-                "rounded-xl border p-5 transition-all duration-500",
-                statusColor,
-                isPending && "opacity-40",
-                isDone && "border-emerald-300 bg-emerald-50/30",
-              )}
-            >
+            <div key={customer.id} className={cn("rounded-xl border p-5 transition-all duration-500 border-border bg-card", isPending && "opacity-40", isDone && "border-emerald-300 bg-emerald-50/30")}>
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    {isActive && (
-                      <span className="text-[10px] font-mono text-primary animate-pulse font-semibold">Connecting…</span>
-                    )}
-                    {isDone && (
-                      <span className="text-[10px] font-mono text-emerald-600 font-semibold flex items-center gap-1">
-                        <CheckCircle2 className="h-3 w-3" /> Connected
-                      </span>
-                    )}
-                    {isPending && (
-                      <span className="text-[10px] font-mono text-muted-foreground">Pending…</span>
-                    )}
+                    {isActive && <span className="text-[10px] font-mono text-primary animate-pulse font-semibold">Connecting…</span>}
+                    {isDone && <span className="text-[10px] font-mono text-emerald-600 font-semibold flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> Connected</span>}
+                    {isPending && <span className="text-[10px] font-mono text-muted-foreground">Pending…</span>}
                   </div>
                   <h3 className="font-semibold text-base">{customer.name}</h3>
                   <p className="text-xs text-muted-foreground">{customer.location}</p>
                 </div>
               </div>
-
               <div className="space-y-2">
                 <div className="flex justify-between text-xs mb-1">
                   <span className="text-muted-foreground">Telemetry sync · {customer.gas}</span>
-                  <span className={cn("font-mono font-bold", {
-                    "text-primary": isActive,
-                    "text-emerald-600": isDone,
-                    "text-muted-foreground": isPending,
-                  })}>{progress[idx]}%</span>
+                  <span className={cn("font-mono font-bold", { "text-primary": isActive, "text-emerald-600": isDone, "text-muted-foreground": isPending })}>{progress[idx]}%</span>
                 </div>
                 <div className="h-3 bg-muted rounded-full overflow-hidden">
-                  <div
-                    className={cn("h-full rounded-full transition-all duration-100", {
-                      "bg-primary": isActive,
-                      "bg-emerald-500": isDone,
-                      "bg-muted-foreground/20": isPending,
-                    })}
-                    style={{ width: `${progress[idx]}%` }}
-                  />
+                  <div className={cn("h-full rounded-full transition-all duration-100", { "bg-primary": isActive, "bg-emerald-500": isDone, "bg-muted-foreground/20": isPending })} style={{ width: `${progress[idx]}%` }} />
                 </div>
               </div>
-
               {isDone && (
                 <div className="mt-3 grid grid-cols-3 gap-3 text-xs pt-3 border-t border-emerald-200">
-                  <div>
-                    <span className="text-muted-foreground">Tank level</span>
-                    <p className="font-semibold font-mono">{customer.currentLevel}%</p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Daily usage</span>
-                    <p className="font-semibold font-mono">{customer.dailyUsage} m³</p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Industry</span>
-                    <p className="font-semibold">{customer.industry}</p>
-                  </div>
+                  <div><span className="text-muted-foreground">Tank level</span><p className="font-semibold font-mono">{customer.currentLevel}%</p></div>
+                  <div><span className="text-muted-foreground">Daily usage</span><p className="font-semibold font-mono">{customer.dailyUsage} m³</p></div>
+                  <div><span className="text-muted-foreground">Industry</span><p className="font-semibold">{customer.industry}</p></div>
                 </div>
               )}
             </div>
           );
         })}
       </div>
-
       {allDone && (
         <div className="text-center">
           <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 px-4 py-2 rounded-full text-sm font-semibold animate-pulse">
-            <CheckCircle2 className="h-4 w-4" />
-            All sensors connected · Launching LENA agents…
+            <CheckCircle2 className="h-4 w-4" /> All sensors connected · Launching LENA agents…
           </div>
         </div>
       )}
@@ -999,7 +951,6 @@ function AgentWorkingView({ scenario, onComplete }: { scenario: Scenario; onComp
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-4">
-        {/* Agent pipeline */}
         <div className="bg-card rounded-xl border p-5 space-y-3">
           <h3 className="font-semibold text-sm flex items-center gap-2">
             <Activity className="h-4 w-4 text-primary animate-pulse" /> LENA Agent Pipeline
@@ -1015,11 +966,9 @@ function AgentWorkingView({ scenario, onComplete }: { scenario: Scenario; onComp
                 "border-border opacity-40": isPending,
               })}>
                 <div className="flex items-center gap-3 mb-1">
-                  {isDone
-                    ? <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
-                    : isActive
-                      ? <step.icon className={cn("h-4 w-4 shrink-0 animate-pulse", step.color)} />
-                      : <div className="h-4 w-4 rounded-full border border-muted-foreground/30 shrink-0" />}
+                  {isDone ? <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                    : isActive ? <step.icon className={cn("h-4 w-4 shrink-0 animate-pulse", step.color)} />
+                    : <div className="h-4 w-4 rounded-full border border-muted-foreground/30 shrink-0" />}
                   <span className={cn("text-xs font-semibold", isDone ? "text-emerald-700" : isActive ? step.color : "text-muted-foreground")}>
                     {step.agentName}
                   </span>
@@ -1032,7 +981,6 @@ function AgentWorkingView({ scenario, onComplete }: { scenario: Scenario; onComp
                     <div className="h-1 bg-muted rounded-full overflow-hidden ml-7">
                       <div className="h-full bg-primary rounded-full transition-all duration-100" style={{ width: `${stepProgress}%` }} />
                     </div>
-                    {/* Data points hidden during processing — shown only when done */}
                   </>
                 )}
                 {isDone && (
@@ -1048,7 +996,6 @@ function AgentWorkingView({ scenario, onComplete }: { scenario: Scenario; onComp
             );
           })}
         </div>
-
         <div className="space-y-4">
           <div className="bg-card rounded-xl border p-4">
             <h3 className="font-semibold text-xs font-mono uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
@@ -1074,8 +1021,6 @@ function AgentWorkingView({ scenario, onComplete }: { scenario: Scenario; onComp
               {!done && <div className="flex gap-2 text-muted-foreground/50"><span className="animate-pulse">▌</span></div>}
             </div>
           </div>
-
-
         </div>
       </div>
     </div>
@@ -1164,20 +1109,14 @@ function CustomerCard({ c, rank }: { c: Customer; rank: number }) {
   );
 }
 
-// ─── Demand Allocation Pie ────────────────────────────────────────────────────
 function DemandAllocationPie({ customers, truckCapacity }: { customers: Customer[]; truckCapacity: number }) {
   const colors = ["#ef4444", "#f97316", "#3b82f6"];
   const rawTotal = customers.reduce((s, c) => s + c.deliveryRequired, 0);
-  const normalised = customers.map(c => ({
-    ...c,
-    normDelivery: Math.round((c.deliveryRequired / rawTotal) * truckCapacity),
-  }));
+  const normalised = customers.map(c => ({ ...c, normDelivery: Math.round((c.deliveryRequired / rawTotal) * truckCapacity) }));
   const normSum = normalised.reduce((s, c) => s + c.normDelivery, 0);
   if (normalised.length > 0) normalised[normalised.length - 1].normDelivery += truckCapacity - normSum;
-
   const total = truckCapacity;
   const segments = normalised.map((c, i) => ({ label: c.name.split(" ")[0], value: c.normDelivery, color: colors[i] }));
-
   let cumAngle = -90;
   const cx = 80, cy = 80, r = 65, inner = 40;
   const arcs = segments.map(seg => {
@@ -1186,19 +1125,14 @@ function DemandAllocationPie({ customers, truckCapacity }: { customers: Customer
     cumAngle += angle;
     const endAngle = cumAngle;
     const toRad = (d: number) => (d * Math.PI) / 180;
-    const x1 = cx + r * Math.cos(toRad(startAngle));
-    const y1 = cy + r * Math.sin(toRad(startAngle));
-    const x2 = cx + r * Math.cos(toRad(endAngle));
-    const y2 = cy + r * Math.sin(toRad(endAngle));
-    const ix1 = cx + inner * Math.cos(toRad(startAngle));
-    const iy1 = cy + inner * Math.sin(toRad(startAngle));
-    const ix2 = cx + inner * Math.cos(toRad(endAngle));
-    const iy2 = cy + inner * Math.sin(toRad(endAngle));
+    const x1 = cx + r * Math.cos(toRad(startAngle)), y1 = cy + r * Math.sin(toRad(startAngle));
+    const x2 = cx + r * Math.cos(toRad(endAngle)), y2 = cy + r * Math.sin(toRad(endAngle));
+    const ix1 = cx + inner * Math.cos(toRad(startAngle)), iy1 = cy + inner * Math.sin(toRad(startAngle));
+    const ix2 = cx + inner * Math.cos(toRad(endAngle)), iy2 = cy + inner * Math.sin(toRad(endAngle));
     const large = angle > 180 ? 1 : 0;
     const path = `M ${ix1} ${iy1} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} L ${ix2} ${iy2} A ${inner} ${inner} 0 ${large} 0 ${ix1} ${iy1} Z`;
     return { ...seg, path, pct: Math.round((seg.value / total) * 100) };
   });
-
   return (
     <div className="bg-card rounded-xl border p-5">
       <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-4 flex items-center gap-2">
@@ -1206,12 +1140,8 @@ function DemandAllocationPie({ customers, truckCapacity }: { customers: Customer
       </h3>
       <div className="flex items-center gap-6">
         <svg width="160" height="160" viewBox="0 0 160 160">
-          {arcs.map((arc, i) => (
-            <path key={i} d={arc.path} fill={arc.color} stroke="white" strokeWidth="2" />
-          ))}
-          <text x="80" y="76" textAnchor="middle" className="font-bold" style={{ fontSize: 18, fill: "currentColor", fontWeight: 700 }}>
-            {truckCapacity}
-          </text>
+          {arcs.map((arc, i) => <path key={i} d={arc.path} fill={arc.color} stroke="white" strokeWidth="2" />)}
+          <text x="80" y="76" textAnchor="middle" className="font-bold" style={{ fontSize: 18, fill: "currentColor", fontWeight: 700 }}>{truckCapacity}</text>
           <text x="80" y="90" textAnchor="middle" style={{ fontSize: 9, fill: "#6b7280" }}>m³ total</text>
         </svg>
         <div className="flex-1 space-y-3">
@@ -1238,102 +1168,46 @@ function DemandAllocationPie({ customers, truckCapacity }: { customers: Customer
   );
 }
 
-// ─── Simulation View ──────────────────────────────────────────────────────────
 function SimulationView({ scenario, onDecision }: { scenario: Scenario; onDecision: () => void }) {
   const customers = [...scenario.customers].sort((a, b) => a.hoursToEmpty - b.hoursToEmpty);
   const inventoryStatus = scenario.inventoryLevel >= scenario.expectedDemand7Days ? "sufficient" : "low";
-  const [selectedRouteId, setSelectedRouteId] = useState<string>(
-    scenario.routeOptions.find(r => r.recommended)?.id ?? scenario.routeOptions[0].id
-  );
-
+  const [selectedRouteId, setSelectedRouteId] = useState<string>(scenario.routeOptions.find(r => r.recommended)?.id ?? scenario.routeOptions[0].id);
   const tagStyles: Record<string, string> = {
     "LENA Recommended": "bg-primary/10 text-primary border border-primary/30",
     "Customer Satisfaction": "bg-emerald-100 text-emerald-700 border border-emerald-300",
     "Quick Delivery": "bg-blue-100 text-blue-700 border border-blue-300",
     "Cost Efficient": "bg-amber-100 text-amber-700 border border-amber-300",
   };
-
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
-          <Thermometer className="h-4 w-4 text-primary" /> Customer Telemetry — Priority by Time-to-Empty
-        </h3>
-        <div className="grid grid-cols-3 gap-4">
-          {customers.map((c, i) => <CustomerCard key={c.id} c={c} rank={i + 1} />)}
-        </div>
+        <h3 className="font-semibold text-sm mb-3 flex items-center gap-2"><Thermometer className="h-4 w-4 text-primary" /> Customer Telemetry — Priority by Time-to-Empty</h3>
+        <div className="grid grid-cols-3 gap-4">{customers.map((c, i) => <CustomerCard key={c.id} c={c} rank={i + 1} />)}</div>
       </div>
-
       <div className="grid grid-cols-4 gap-3">
-        <div className="bg-card rounded-xl border p-4">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Gas Type</p>
-          <p className="font-bold text-lg text-primary">{scenario.gasType}</p>
-          <p className="text-[11px] text-muted-foreground mt-1">This dispatch</p>
-        </div>
-        <div className="bg-card rounded-xl border p-4">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Inventory Level</p>
-          <p className="font-bold text-2xl font-mono">{scenario.inventoryLevel}<span className="text-sm font-normal text-muted-foreground ml-1">m³</span></p>
-          <p className={cn("text-[11px] mt-1 font-semibold", inventoryStatus === "sufficient" ? "text-emerald-600" : "text-orange-600")}>
-            {inventoryStatus === "sufficient" ? "✓ Sufficient" : "⚠ Monitor"}
-          </p>
-        </div>
-        <div className="bg-card rounded-xl border p-4">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Expected Demand (7d)</p>
-          <p className="font-bold text-2xl font-mono">{scenario.expectedDemand7Days}<span className="text-sm font-normal text-muted-foreground ml-1">m³</span></p>
-          <p className="text-[11px] text-muted-foreground mt-1">Forecast period</p>
-        </div>
-        <div className="bg-card rounded-xl border p-4">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Customers to Act On</p>
-          <p className="font-bold text-2xl font-mono">{customers.length}</p>
-          <p className="text-[11px] text-muted-foreground mt-1">{customers.filter(c => c.priority === "CRITICAL").length} Critical · {customers.filter(c => c.priority === "HIGH").length} High</p>
-        </div>
+        <div className="bg-card rounded-xl border p-4"><p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Gas Type</p><p className="font-bold text-lg text-primary">{scenario.gasType}</p><p className="text-[11px] text-muted-foreground mt-1">This dispatch</p></div>
+        <div className="bg-card rounded-xl border p-4"><p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Inventory Level</p><p className="font-bold text-2xl font-mono">{scenario.inventoryLevel}<span className="text-sm font-normal text-muted-foreground ml-1">m³</span></p><p className={cn("text-[11px] mt-1 font-semibold", inventoryStatus === "sufficient" ? "text-emerald-600" : "text-orange-600")}>{inventoryStatus === "sufficient" ? "✓ Sufficient" : "⚠ Monitor"}</p></div>
+        <div className="bg-card rounded-xl border p-4"><p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Expected Demand (7d)</p><p className="font-bold text-2xl font-mono">{scenario.expectedDemand7Days}<span className="text-sm font-normal text-muted-foreground ml-1">m³</span></p><p className="text-[11px] text-muted-foreground mt-1">Forecast period</p></div>
+        <div className="bg-card rounded-xl border p-4"><p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Customers to Act On</p><p className="font-bold text-2xl font-mono">{customers.length}</p><p className="text-[11px] text-muted-foreground mt-1">{customers.filter(c => c.priority === "CRITICAL").length} Critical · {customers.filter(c => c.priority === "HIGH").length} High</p></div>
       </div>
-
       <DemandAllocationPie customers={customers} truckCapacity={scenario.truckCapacity} />
-
       <div>
-        <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
-          <Navigation className="h-4 w-4 text-primary" /> Route Options Evaluated
-        </h3>
+        <h3 className="font-semibold text-sm mb-3 flex items-center gap-2"><Navigation className="h-4 w-4 text-primary" /> Route Options Evaluated</h3>
         <div className="space-y-3">
           {scenario.routeOptions.map(r => {
             const isSelected = selectedRouteId === r.id;
             return (
-              <div
-                key={r.id}
-                onClick={() => setSelectedRouteId(r.id)}
-                className={cn(
-                  "rounded-xl border p-4 flex items-start gap-4 cursor-pointer transition-all duration-200",
-                  isSelected
-                    ? "border-primary bg-primary/5 ring-2 ring-primary/20"
-                    : "border-border hover:border-primary/40 hover:bg-muted/30"
-                )}
-              >
-                <div className="shrink-0 mt-0.5">
-                  {isSelected
-                    ? <CheckCircle2 className="h-5 w-5 text-primary" />
-                    : <div className="h-5 w-5 rounded-full border-2 border-muted-foreground/30" />}
-                </div>
+              <div key={r.id} onClick={() => setSelectedRouteId(r.id)} className={cn("rounded-xl border p-4 flex items-start gap-4 cursor-pointer transition-all duration-200", isSelected ? "border-primary bg-primary/5 ring-2 ring-primary/20" : "border-border hover:border-primary/40 hover:bg-muted/30")}>
+                <div className="shrink-0 mt-0.5">{isSelected ? <CheckCircle2 className="h-5 w-5 text-primary" /> : <div className="h-5 w-5 rounded-full border-2 border-muted-foreground/30" />}</div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-2 flex-wrap">
                     <span className="font-semibold text-sm">{r.label}</span>
-                    {r.tags.map(tag => (
-                      <span key={tag} className={cn("text-[10px] px-2 py-0.5 rounded-full font-semibold", tagStyles[tag] || "bg-muted text-muted-foreground")}>
-                        {tag}
-                      </span>
-                    ))}
-                    <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full ml-auto", {
-                      "bg-emerald-100 text-emerald-700": r.onTimeRisk === "LOW",
-                      "bg-orange-100 text-orange-700": r.onTimeRisk === "MEDIUM",
-                      "bg-red-100 text-red-700": r.onTimeRisk === "HIGH",
-                    })}>{r.onTimeRisk} risk</span>
+                    {r.tags.map(tag => <span key={tag} className={cn("text-[10px] px-2 py-0.5 rounded-full font-semibold", tagStyles[tag] || "bg-muted text-muted-foreground")}>{tag}</span>)}
+                    <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full ml-auto", { "bg-emerald-100 text-emerald-700": r.onTimeRisk === "LOW", "bg-orange-100 text-orange-700": r.onTimeRisk === "MEDIUM", "bg-red-100 text-red-700": r.onTimeRisk === "HIGH" })}>{r.onTimeRisk} risk</span>
                   </div>
                   <div className="flex gap-1 flex-wrap mb-2">
                     {r.stops.map((stop, si) => (
-                      <div key={si} className="flex items-center gap-1">
-                        <span className="text-xs text-muted-foreground">{stop}</span>
-                        {si < r.stops.length - 1 && <ChevronRight className="h-3 w-3 text-muted-foreground/50" />}
-                      </div>
+                      <div key={si} className="flex items-center gap-1"><span className="text-xs text-muted-foreground">{stop}</span>{si < r.stops.length - 1 && <ChevronRight className="h-3 w-3 text-muted-foreground/50" />}</div>
                     ))}
                   </div>
                   <div className="grid grid-cols-4 gap-3 text-xs">
@@ -1348,17 +1222,13 @@ function SimulationView({ scenario, onDecision }: { scenario: Scenario; onDecisi
           })}
         </div>
       </div>
-
       <div className="flex justify-end">
-        <Button size="lg" className="gap-2" onClick={onDecision}>
-          View Decision Summary <ArrowRight className="h-4 w-4" />
-        </Button>
+        <Button size="lg" className="gap-2" onClick={onDecision}>View Decision Summary <ArrowRight className="h-4 w-4" /></Button>
       </div>
     </div>
   );
 }
 
-// ─── Decision Summary ─────────────────────────────────────────────────────────
 function DecisionView({ scenario, onModify }: { scenario: Scenario; onModify: () => void }) {
   const [approved, setApproved] = useState(false);
   const [rejected, setRejected] = useState(false);
@@ -1367,39 +1237,21 @@ function DecisionView({ scenario, onModify }: { scenario: Scenario; onModify: ()
   const totalRevenue = customers.reduce((s, c) => s + c.annualRevenue, 0);
   const totalContract = customers.reduce((s, c) => s + c.contractValue, 0);
   const penaltyAvertedMax = customers[0].penaltyPerHour * 8;
-
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between">
-        <div>
-          <h2 className="text-xl font-bold">Decision Summary</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            {scenario.label} · Truck {scenario.truckId} · Generated by LENA
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Clock className="h-4 w-4 text-muted-foreground" />
-          <span className="text-xs text-muted-foreground font-mono">{new Date().toLocaleTimeString()}</span>
-        </div>
+        <div><h2 className="text-xl font-bold">Decision Summary</h2><p className="text-sm text-muted-foreground mt-1">{scenario.label} · Truck {scenario.truckId} · Generated by LENA</p></div>
+        <div className="flex items-center gap-2"><Clock className="h-4 w-4 text-muted-foreground" /><span className="text-xs text-muted-foreground font-mono">{new Date().toLocaleTimeString()}</span></div>
       </div>
-
       <DemandAllocationPie customers={customers} truckCapacity={scenario.truckCapacity} />
-
       <div className="bg-card rounded-xl border p-5">
-        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-          Recommended Delivery Sequence — {scenario.truckId}
-        </h3>
+        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Recommended Delivery Sequence — {scenario.truckId}</h3>
         <div className="space-y-3">
           {customers.map((c, i) => (
             <div key={c.id} className="flex gap-4 items-start">
-              <div className={cn("h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0", {
-                "bg-red-500": i === 0, "bg-orange-400": i === 1, "bg-blue-500": i === 2,
-              })}>{i + 1}</div>
+              <div className={cn("h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0", { "bg-red-500": i === 0, "bg-orange-400": i === 1, "bg-blue-500": i === 2 })}>{i + 1}</div>
               <div className="flex-1 p-3 rounded-lg bg-muted/40">
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-sm">{c.name}</span>
-                  <PriorityBadge priority={c.priority} />
-                </div>
+                <div className="flex items-center justify-between"><span className="font-semibold text-sm">{c.name}</span><PriorityBadge priority={c.priority} /></div>
                 <div className="flex flex-wrap gap-4 mt-1.5 text-xs text-muted-foreground">
                   <span>Deliver: <span className="font-mono font-semibold text-foreground">{c.deliveryRequired} m³ N₂</span></span>
                   <span>Buffer: <span className="font-semibold text-foreground">{c.hoursToEmpty.toFixed(1)} hrs left</span></span>
@@ -1417,41 +1269,21 @@ function DecisionView({ scenario, onModify }: { scenario: Scenario; onModify: ()
           ))}
         </div>
       </div>
-
       <div className="bg-card rounded-xl border p-5">
         <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Customer Credit Risk Profile</h3>
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
-            <thead>
-              <tr className="border-b text-muted-foreground">
-                <th className="text-left py-2 pr-3 font-medium">Customer</th>
-                <th className="text-left py-2 pr-3 font-medium">Credit Score</th>
-                <th className="text-left py-2 pr-3 font-medium">Payment Terms</th>
-                <th className="text-left py-2 pr-3 font-medium">Last Payment</th>
-                <th className="text-left py-2 pr-3 font-medium">On-Time %</th>
-                <th className="text-left py-2 pr-3 font-medium">Distance (Plant)</th>
-                <th className="text-left py-2 font-medium">SLA Penalty/hr</th>
-              </tr>
-            </thead>
+            <thead><tr className="border-b text-muted-foreground"><th className="text-left py-2 pr-3 font-medium">Customer</th><th className="text-left py-2 pr-3 font-medium">Credit Score</th><th className="text-left py-2 pr-3 font-medium">Payment Terms</th><th className="text-left py-2 pr-3 font-medium">Last Payment</th><th className="text-left py-2 pr-3 font-medium">On-Time %</th><th className="text-left py-2 pr-3 font-medium">Distance (Plant)</th><th className="text-left py-2 font-medium">SLA Penalty/hr</th></tr></thead>
             <tbody className="divide-y">
               {customers.map(c => {
                 const scoreBg = c.creditScore >= 750 ? "bg-emerald-100 text-emerald-700" : c.creditScore >= 650 ? "bg-blue-100 text-blue-700" : "bg-orange-100 text-orange-700";
                 return (
                   <tr key={c.id}>
                     <td className="py-2.5 pr-3 font-semibold">{c.name}</td>
-                    <td className="py-2.5 pr-3">
-                      <span className={cn("font-bold px-1.5 py-0.5 rounded text-[10px]", scoreBg)}>{c.creditScore}</span>
-                    </td>
+                    <td className="py-2.5 pr-3"><span className={cn("font-bold px-1.5 py-0.5 rounded text-[10px]", scoreBg)}>{c.creditScore}</span></td>
                     <td className="py-2.5 pr-3 text-muted-foreground">{c.paymentDays} days</td>
-                    <td className="py-2.5 pr-3">
-                      <p className="font-semibold">{c.lastPaymentDate}</p>
-                      <p className="text-muted-foreground">£{(c.lastPaymentAmount / 1000).toFixed(0)}K</p>
-                    </td>
-                    <td className="py-2.5 pr-3">
-                      <span className={cn("font-bold", c.paymentOnTimeAccuracy >= 95 ? "text-emerald-600" : c.paymentOnTimeAccuracy >= 85 ? "text-orange-500" : "text-red-600")}>
-                        {c.paymentOnTimeAccuracy}%
-                      </span>
-                    </td>
+                    <td className="py-2.5 pr-3"><p className="font-semibold">{c.lastPaymentDate}</p><p className="text-muted-foreground">£{(c.lastPaymentAmount / 1000).toFixed(0)}K</p></td>
+                    <td className="py-2.5 pr-3"><span className={cn("font-bold", c.paymentOnTimeAccuracy >= 95 ? "text-emerald-600" : c.paymentOnTimeAccuracy >= 85 ? "text-orange-500" : "text-red-600")}>{c.paymentOnTimeAccuracy}%</span></td>
                     <td className="py-2.5 pr-3 text-muted-foreground">{c.distanceFromPlant} km</td>
                     <td className="py-2.5 text-red-600 font-semibold">£{c.penaltyPerHour}K</td>
                   </tr>
@@ -1461,37 +1293,19 @@ function DecisionView({ scenario, onModify }: { scenario: Scenario; onModify: ()
           </table>
         </div>
       </div>
-
       <div className="bg-card rounded-xl border p-5">
         <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Financial Impact Analysis</h3>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-3">
-            <div className="p-3 rounded-lg bg-red-50 border border-red-200">
-              <p className="text-xs text-red-700 font-semibold">Penalty Exposure (if delayed)</p>
-              <p className="font-bold text-xl text-red-600 font-mono mt-1">£{penaltyAvertedMax.toFixed(0)}K</p>
-              <p className="text-xs text-red-600">£{customers[0].penaltyPerHour}K/hr × 8 hrs est. delay</p>
-            </div>
-            <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200">
-              <p className="text-xs text-emerald-700 font-semibold">Penalty Averted (LENA action)</p>
-              <p className="font-bold text-xl text-emerald-600 font-mono mt-1">£{penaltyAvertedMax.toFixed(0)}K</p>
-              <p className="text-xs text-emerald-600">All SLAs met · {recommended.onTimeRisk} risk</p>
-            </div>
+            <div className="p-3 rounded-lg bg-red-50 border border-red-200"><p className="text-xs text-red-700 font-semibold">Penalty Exposure (if delayed)</p><p className="font-bold text-xl text-red-600 font-mono mt-1">£{penaltyAvertedMax.toFixed(0)}K</p><p className="text-xs text-red-600">£{customers[0].penaltyPerHour}K/hr × 8 hrs est. delay</p></div>
+            <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200"><p className="text-xs text-emerald-700 font-semibold">Penalty Averted (LENA action)</p><p className="font-bold text-xl text-emerald-600 font-mono mt-1">£{penaltyAvertedMax.toFixed(0)}K</p><p className="text-xs text-emerald-600">All SLAs met · {recommended.onTimeRisk} risk</p></div>
           </div>
           <div className="space-y-3">
-            <div className="p-3 rounded-lg bg-muted/40 border">
-              <p className="text-xs text-muted-foreground font-semibold">Total Annual Revenue Protected</p>
-              <p className="font-bold text-xl font-mono mt-1">£{totalRevenue.toFixed(1)}M</p>
-              <p className="text-xs text-muted-foreground">Across {customers.length} long-term accounts</p>
-            </div>
-            <div className="p-3 rounded-lg bg-muted/40 border">
-              <p className="text-xs text-muted-foreground font-semibold">Total Contract Value Protected</p>
-              <p className="font-bold text-xl font-mono mt-1">£{totalContract.toFixed(1)}M</p>
-              <p className="text-xs text-muted-foreground">Weighted contract portfolio</p>
-            </div>
+            <div className="p-3 rounded-lg bg-muted/40 border"><p className="text-xs text-muted-foreground font-semibold">Total Annual Revenue Protected</p><p className="font-bold text-xl font-mono mt-1">£{totalRevenue.toFixed(1)}M</p><p className="text-xs text-muted-foreground">Across {customers.length} long-term accounts</p></div>
+            <div className="p-3 rounded-lg bg-muted/40 border"><p className="text-xs text-muted-foreground font-semibold">Total Contract Value Protected</p><p className="font-bold text-xl font-mono mt-1">£{totalContract.toFixed(1)}M</p><p className="text-xs text-muted-foreground">Weighted contract portfolio</p></div>
           </div>
         </div>
       </div>
-
       <div className="bg-card rounded-xl border p-5">
         <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Factors Considered by LENA</h3>
         <div className="grid grid-cols-2 gap-3">
@@ -1507,15 +1321,11 @@ function DecisionView({ scenario, onModify }: { scenario: Scenario; onModify: ()
           ].map(f => (
             <div key={f.label} className="flex gap-3 p-3 rounded-lg bg-muted/40">
               <f.icon className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-              <div>
-                <p className="text-xs font-semibold">{f.label}</p>
-                <p className="text-xs text-muted-foreground">{f.value}</p>
-              </div>
+              <div><p className="text-xs font-semibold">{f.label}</p><p className="text-xs text-muted-foreground">{f.value}</p></div>
             </div>
           ))}
         </div>
       </div>
-
       <div className="bg-card rounded-xl border p-5">
         <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Impact of This Decision</h3>
         <div className="grid grid-cols-3 gap-3">
@@ -1533,7 +1343,6 @@ function DecisionView({ scenario, onModify }: { scenario: Scenario; onModify: ()
           ))}
         </div>
       </div>
-
       <div className="bg-emerald-50 border border-emerald-300 rounded-xl p-4 flex items-start gap-3">
         <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
         <div>
@@ -1541,28 +1350,17 @@ function DecisionView({ scenario, onModify }: { scenario: Scenario; onModify: ()
           <p className="text-sm text-emerald-700 mt-1">{scenario.lenadecision}</p>
         </div>
       </div>
-
       {!approved && !rejected ? (
         <div className="bg-primary/5 border-2 border-primary/30 rounded-xl p-6">
           <div className="flex items-start gap-4">
             <Users className="h-6 w-6 text-primary shrink-0 mt-0.5" />
             <div className="flex-1">
               <h3 className="font-semibold">Human-in-the-Loop Approval Required</h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                LENA has generated this dispatch plan for truck <span className="font-mono font-semibold">{scenario.truckId}</span>.
-                As COO, your approval is required before the tanker departs from {scenario.depotLocation}.
-                You may modify the delivery sequence or allocation before approving.
-              </p>
+              <p className="text-sm text-muted-foreground mt-1">LENA has generated this dispatch plan for truck <span className="font-mono font-semibold">{scenario.truckId}</span>. As COO, your approval is required before the tanker departs from {scenario.depotLocation}. You may modify the delivery sequence or allocation before approving.</p>
               <div className="mt-4 flex gap-3">
-                <Button className="gap-2" onClick={() => setApproved(true)}>
-                  <CheckCircle2 className="h-4 w-4" /> Approve & Dispatch {scenario.truckId}
-                </Button>
-                <Button variant="outline" className="gap-2" onClick={onModify}>
-                  <RotateCcw className="h-4 w-4" /> Modify Decision
-                </Button>
-                <Button variant="outline" className="gap-2 border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => setRejected(true)}>
-                  <XCircle className="h-4 w-4" /> Reject
-                </Button>
+                <Button className="gap-2" onClick={() => setApproved(true)}><CheckCircle2 className="h-4 w-4" /> Approve & Dispatch {scenario.truckId}</Button>
+                <Button variant="outline" className="gap-2" onClick={onModify}><RotateCcw className="h-4 w-4" /> Modify Decision</Button>
+                <Button variant="outline" className="gap-2 border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => setRejected(true)}><XCircle className="h-4 w-4" /> Reject</Button>
               </div>
             </div>
           </div>
@@ -1571,28 +1369,12 @@ function DecisionView({ scenario, onModify }: { scenario: Scenario; onModify: ()
         <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-700 rounded-xl p-6 space-y-3">
           <div className="flex items-center gap-3">
             <CheckCircle2 className="h-8 w-8 text-emerald-600 shrink-0" />
-            <div>
-              <h3 className="font-semibold text-emerald-700 dark:text-emerald-400">
-                Dispatch Approved — {scenario.truckId} Departing
-              </h3>
-              <p className="text-sm text-emerald-600 dark:text-emerald-500">
-                Truck {scenario.truckId} dispatched from {scenario.depotLocation}. ETA completion: {recommended.totalTime} hours.
-              </p>
-            </div>
+            <div><h3 className="font-semibold text-emerald-700 dark:text-emerald-400">Dispatch Approved — {scenario.truckId} Departing</h3><p className="text-sm text-emerald-600 dark:text-emerald-500">Truck {scenario.truckId} dispatched from {scenario.depotLocation}. ETA completion: {recommended.totalTime} hours.</p></div>
           </div>
           <div className="grid grid-cols-3 gap-3 text-xs">
-            <div className="bg-emerald-100 rounded-lg p-3">
-              <p className="text-emerald-700 font-semibold">Penalty averted</p>
-              <p className="font-bold text-emerald-600 text-lg font-mono">£{penaltyAvertedMax.toFixed(0)}K</p>
-            </div>
-            <div className="bg-emerald-100 rounded-lg p-3">
-              <p className="text-emerald-700 font-semibold">Revenue protected</p>
-              <p className="font-bold text-emerald-600 text-lg font-mono">£{totalRevenue.toFixed(1)}M/yr</p>
-            </div>
-            <div className="bg-emerald-100 rounded-lg p-3">
-              <p className="text-emerald-700 font-semibold">Customers served</p>
-              <p className="font-bold text-emerald-600 text-lg font-mono">{customers.length} sites</p>
-            </div>
+            <div className="bg-emerald-100 rounded-lg p-3"><p className="text-emerald-700 font-semibold">Penalty averted</p><p className="font-bold text-emerald-600 text-lg font-mono">£{penaltyAvertedMax.toFixed(0)}K</p></div>
+            <div className="bg-emerald-100 rounded-lg p-3"><p className="text-emerald-700 font-semibold">Revenue protected</p><p className="font-bold text-emerald-600 text-lg font-mono">£{totalRevenue.toFixed(1)}M/yr</p></div>
+            <div className="bg-emerald-100 rounded-lg p-3"><p className="text-emerald-700 font-semibold">Customers served</p><p className="font-bold text-emerald-600 text-lg font-mono">{customers.length} sites</p></div>
           </div>
           <p className="text-xs text-emerald-600">Dispatch confirmed · All agents standing by.</p>
         </div>
@@ -1600,20 +1382,9 @@ function DecisionView({ scenario, onModify }: { scenario: Scenario; onModify: ()
         <div className="bg-red-50 dark:bg-red-950/30 border border-red-300 dark:border-red-700 rounded-xl p-6 space-y-3">
           <div className="flex items-center gap-3">
             <XCircle className="h-8 w-8 text-red-600 shrink-0" />
-            <div>
-              <h3 className="font-semibold text-red-700 dark:text-red-400">
-                Dispatch Rejected — {scenario.truckId} On Hold
-              </h3>
-              <p className="text-sm text-red-600 dark:text-red-500">
-                The dispatch plan has been rejected. Truck {scenario.truckId} remains at {scenario.depotLocation} pending a revised plan.
-              </p>
-            </div>
+            <div><h3 className="font-semibold text-red-700 dark:text-red-400">Dispatch Rejected — {scenario.truckId} On Hold</h3><p className="text-sm text-red-600 dark:text-red-500">The dispatch plan has been rejected. Truck {scenario.truckId} remains at {scenario.depotLocation} pending a revised plan.</p></div>
           </div>
-          <div className="flex gap-3 pt-1">
-            <Button variant="outline" className="gap-2" onClick={onModify}>
-              <RotateCcw className="h-4 w-4" /> Review & Modify Plan
-            </Button>
-          </div>
+          <div className="flex gap-3 pt-1"><Button variant="outline" className="gap-2" onClick={onModify}><RotateCcw className="h-4 w-4" /> Review & Modify Plan</Button></div>
         </div>
       )}
     </div>
@@ -1622,10 +1393,11 @@ function DecisionView({ scenario, onModify }: { scenario: Scenario; onModify: ()
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function SupplyChain() {
+  const navigate = useNavigate();
   const [view, setView] = useState<View>("dashboard");
   const [scenario, setScenario] = useState<Scenario | null>(null);
 
-  // Auto-select scenario A by default when launching
+  // ✅ Auto-select scenario from sessionStorage (set by VotingPage after voting closes)
   useEffect(() => {
     const sid = sessionStorage.getItem("lena_scenario") as ScenarioId | null;
     const autostart = sessionStorage.getItem("lena_autostart");
@@ -1637,11 +1409,9 @@ export default function SupplyChain() {
     }
   }, []);
 
-  function handleLaunch() {
-    // Pick scenario A by default (or could be randomised)
-    const defaultScenario = SCENARIOS["A"];
-    setScenario(defaultScenario);
-    setView("telemetry-connect");
+  // ✅ "Go to Audience Vote" navigates to /voting
+  function handleGoToVoting() {
+    navigate("/voting");
   }
 
   return (
@@ -1670,27 +1440,14 @@ export default function SupplyChain() {
               {view === "telemetry-connect" && <><ChevronRight className="h-3 w-3" /><span className="text-foreground">Telemetry Connect</span></>}
               {view === "decision" && <><ChevronRight className="h-3 w-3" /><span className="text-foreground">Decision Summary</span></>}
             </nav>
-            {/* Scenario badge removed from top bar for simulation and decision views */}
           </div>
-
           <div className="flex-1 overflow-y-auto">
             <div className="max-w-6xl mx-auto px-6 py-6">
-              {view === "dashboard" && <DashboardView onStartSimulation={handleLaunch} />}
-              {view === "telemetry-connect" && scenario && (
-                <TelemetryConnectView
-                  scenario={scenario}
-                  onComplete={() => setView("agent-working")}
-                />
-              )}
-              {view === "agent-working" && scenario && (
-                <AgentWorkingView scenario={scenario} onComplete={() => setView("simulation")} />
-              )}
-              {view === "simulation" && scenario && (
-                <SimulationView scenario={scenario} onDecision={() => setView("decision")} />
-              )}
-              {view === "decision" && scenario && (
-                <DecisionView scenario={scenario} onModify={() => setView("simulation")} />
-              )}
+              {view === "dashboard" && <DashboardView onGoToVoting={handleGoToVoting} />}
+              {view === "telemetry-connect" && scenario && <TelemetryConnectView scenario={scenario} onComplete={() => setView("agent-working")} />}
+              {view === "agent-working" && scenario && <AgentWorkingView scenario={scenario} onComplete={() => setView("simulation")} />}
+              {view === "simulation" && scenario && <SimulationView scenario={scenario} onDecision={() => setView("decision")} />}
+              {view === "decision" && scenario && <DecisionView scenario={scenario} onModify={() => setView("simulation")} />}
             </div>
           </div>
         </div>

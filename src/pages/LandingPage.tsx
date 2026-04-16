@@ -101,7 +101,8 @@ export default function LandingPage() {
 
   const handleLaunch = () => {
     setLaunched(true);
-    setTimeout(() => navigate("/vision-panel"), 800);
+    // ✅ Navigate to /voting instead of /vision-panel
+    setTimeout(() => navigate("/voting"), 800);
   };
 
   return (

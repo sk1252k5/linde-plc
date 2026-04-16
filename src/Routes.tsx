@@ -13,15 +13,12 @@ import ItCybersecurity from "./pages/It & cybersecurity";
 import EosAssistant from "./pages/EosAssistant";
 import Settings from "./pages/Settings";
 import VisionPanel from "./VisionPanel";
-<<<<<<< HEAD
 import NuroModels from "./pages/NuroModels";
 import NuroForge from "./pages/NuroForge";
-=======
-//import NuroForge from ".pages/NuroForge";
->>>>>>> 58d4d16096adf55877aefcc244304fbb121bdb06
 import NuroStack from "./pages/NuroStack";
 import ConsolidatedDashboard from "./pages/ConsolidatedDashboard";
-import VotingPage from "./pages/VotingPage"; // ← NEW
+import VotingPage from "./pages/VotingPage";
+import MobileVotePage from "./pages/MobileVotePage"; // ← NEW
 
 
 export const Routes: RouteObject[] = [
@@ -30,20 +27,20 @@ export const Routes: RouteObject[] = [
     children: [
       { index: true, element: <LandingPage /> },
 
-      // ── Voting page — standalone (no sidebar layout) ──────────────────────
-      { path: "voting", element: <VotingPage /> }, // ← NEW
+      // ── Voting presenter screen (standalone, no sidebar) ───────────────────
+      { path: "voting", element: <VotingPage /> },
+
+      // ── Mobile voting page — scanned via QR code ──────────────────────────
+      // Accessible at /vote on any device on the same network/domain
+      { path: "vote", element: <MobileVotePage /> },
 
       {
         element: <SystemLayout />,
         children: [
           { path: "vision-panel", element: <VisionPanel /> },
           { path: "nurostack", element: <NuroStack /> },
-<<<<<<< HEAD
           { path: "nuromodels", element: <NuroModels /> },
           { path: "nuroforge", element: <NuroForge /> },
-=======
-          //{ path: "nuroforge", element: <nuroforge /> },
->>>>>>> 58d4d16096adf55877aefcc244304fbb121bdb06
         ],
       },
       {
