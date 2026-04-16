@@ -101,8 +101,10 @@ export default function LandingPage() {
 
   const handleLaunch = () => {
     setLaunched(true);
-    // ✅ Navigate to /voting instead of /vision-panel
-    setTimeout(() => navigate("/voting"), 800);
+    // ✅ Navigate to external voting URL
+    setTimeout(() => {
+      window.location.href = "https://voting-xq20.onrender.com";
+    }, 800);
   };
 
   return (

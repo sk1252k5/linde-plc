@@ -16,6 +16,8 @@ import VisionPanel from "./VisionPanel";
 import NuroModels from "./pages/NuroModels";
 import NuroForge from "./pages/NuroForge";
 import NuroStack from "./pages/NuroStack";
+import Nexus from "./pages/Nexus";
+import NuroVault from "./pages/NuroVault";
 import ConsolidatedDashboard from "./pages/ConsolidatedDashboard";
 import VotingPage from "./pages/VotingPage";
 import MobileVotePage from "./pages/MobileVotePage"; // ← NEW
@@ -41,6 +43,9 @@ export const Routes: RouteObject[] = [
           { path: "nurostack", element: <NuroStack /> },
           { path: "nuromodels", element: <NuroModels /> },
           { path: "nuroforge", element: <NuroForge /> },
+
+          {path: "nexus", element: <Nexus/>},
+          {path: "nurovault", element: <NuroVault/>}
         ],
       },
       {

@@ -1,11 +1,8 @@
 // ─── SupplyChain.tsx ──────────────────────────────────────────────────────────
-// Changes:
-//   1. DemandAllocationPie removed from SimulationView
-//   2. RouteOptions moved from SimulationView → DecisionView (below pie)
-//   3. "Modify Decision" scrolls to route options section in DecisionView
-//   4. Back navigation added between all screens (no re-run of agents)
-//   5. AgentWorkingView shows finished state when revisited
-//   6. Page transitions animate from top
+// Changes from original:
+//   1. Reads ?scenario=A&autostart=true from URL query params (cross-origin safe)
+//   2. Falls back to sessionStorage for same-origin navigation
+//   3. All other logic unchanged
 
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
@@ -911,14 +908,12 @@ function TelemetryConnectView({ scenario, onComplete, onBack }: {
 }
 
 // ─── Agent Working View ───────────────────────────────────────────────────────
-// agentsDone prop: if true, skip animation and show finished state immediately
 function AgentWorkingView({ scenario, onComplete, onBack, agentsDone }: {
   scenario: Scenario; onComplete: () => void; onBack: () => void; agentsDone: boolean;
 }) {
   const steps = buildAgentSteps(scenario);
   const allIndices = steps.map((_, i) => i);
 
-  // If already done, show finished state without running animation
   const [currentStep, setCurrentStep] = useState(agentsDone ? steps.length - 1 : 0);
   const [completedSteps, setCompletedSteps] = useState<number[]>(agentsDone ? allIndices : []);
   const [stepProgress, setStepProgress] = useState(agentsDone ? 100 : 0);
@@ -937,7 +932,7 @@ function AgentWorkingView({ scenario, onComplete, onBack, agentsDone }: {
   ];
 
   useEffect(() => {
-    if (agentsDone) return; // skip animation if already completed before
+    if (agentsDone) return;
     let elapsed = 0;
     steps.forEach((step, idx) => {
       setTimeout(() => {
@@ -1222,15 +1217,11 @@ function DemandAllocationPie({ customers, truckCapacity }: { customers: Customer
   );
 }
 
-// ─── Route Options Component (shared between Simulation & Decision views) ─────
+// ─── Route Options Component ──────────────────────────────────────────────────
 function RouteOptionsSection({
-  scenario,
-  selectedRouteId,
-  onSelectRoute,
+  scenario, selectedRouteId, onSelectRoute,
 }: {
-  scenario: Scenario;
-  selectedRouteId: string;
-  onSelectRoute: (id: string) => void;
+  scenario: Scenario; selectedRouteId: string; onSelectRoute: (id: string) => void;
 }) {
   const tagStyles: Record<string, string> = {
     "LENA Recommended": "bg-primary/10 text-primary border border-primary/30",
@@ -1290,8 +1281,7 @@ function RouteOptionsSection({
   );
 }
 
-// ─── Simulation (Routing Agent) View ─────────────────────────────────────────
-// Demand pie REMOVED, Route options REMOVED (moved to DecisionView)
+// ─── Simulation View ──────────────────────────────────────────────────────────
 function SimulationView({ scenario, onDecision, onBack }: {
   scenario: Scenario; onDecision: () => void; onBack: () => void;
 }) {
@@ -1355,8 +1345,6 @@ function DecisionView({ scenario, onBack }: { scenario: Scenario; onBack: () => 
   const [selectedRouteId, setSelectedRouteId] = useState<string>(
     scenario.routeOptions.find(r => r.recommended)?.id ?? scenario.routeOptions[0].id
   );
-
-  // Ref for scrolling to route options section when "Modify Decision" is clicked
   const routeOptionsRef = useRef<HTMLDivElement>(null);
 
   const recommended = scenario.routeOptions.find(r => r.recommended)!;
@@ -1369,7 +1357,6 @@ function DecisionView({ scenario, onBack }: { scenario: Scenario; onBack: () => 
   function handleModify() {
     setApproved(false);
     setRejected(false);
-    // Scroll to route options section
     routeOptionsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
@@ -1391,10 +1378,8 @@ function DecisionView({ scenario, onBack }: { scenario: Scenario; onBack: () => 
         </div>
       </div>
 
-      {/* Demand Allocation Pie */}
       <DemandAllocationPie customers={customers} truckCapacity={scenario.truckCapacity} />
 
-      {/* Route Options — now in Decision Summary */}
       <div ref={routeOptionsRef}>
         <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
           <Navigation className="h-4 w-4 text-primary" /> Route Options Evaluated
@@ -1611,15 +1596,9 @@ function DecisionView({ scenario, onBack }: { scenario: Scenario; onBack: () => 
 }
 
 // ─── Animated Page Wrapper ────────────────────────────────────────────────────
-// Animates from top (translateY -20px → 0) instead of from bottom
 function PageTransition({ children, viewKey }: { children: React.ReactNode; viewKey: string }) {
   return (
-    <div
-      key={viewKey}
-      style={{
-        animation: "slideFromTop 0.3s ease-out forwards",
-      }}
-    >
+    <div key={viewKey} style={{ animation: "slideFromTop 0.3s ease-out forwards" }}>
       <style>{`
         @keyframes slideFromTop {
           from { opacity: 0; transform: translateY(-20px); }
@@ -1636,11 +1615,26 @@ export default function SupplyChain() {
   const navigate = useNavigate();
   const [view, setView] = useState<View>("dashboard");
   const [scenario, setScenario] = useState<Scenario | null>(null);
-  // Track whether agent pipeline has already been completed
   const [agentsDone, setAgentsDone] = useState(false);
 
-  // Auto-select scenario from sessionStorage (set by VotingPage after voting closes)
+  // ── Auto-launch: read from URL query params (cross-origin) OR sessionStorage (same-origin) ──
   useEffect(() => {
+    // 1. Try URL query params first (arriving from Render voting page)
+    const params = new URLSearchParams(window.location.search);
+    const qScenario = params.get("scenario") as ScenarioId | null;
+    const qAutostart = params.get("autostart");
+
+    if (qScenario && qAutostart === "true" && SCENARIOS[qScenario]) {
+      // Clean URL without reloading
+      const cleanUrl = window.location.pathname;
+      window.history.replaceState({}, "", cleanUrl);
+      setScenario(SCENARIOS[qScenario]);
+      setAgentsDone(false);
+      setView("telemetry-connect");
+      return;
+    }
+
+    // 2. Fall back to sessionStorage (same-origin navigation from internal voting page)
     const sid = sessionStorage.getItem("lena_scenario") as ScenarioId | null;
     const autostart = sessionStorage.getItem("lena_autostart");
     if (sid && autostart === "true" && SCENARIOS[sid]) {
@@ -1656,12 +1650,9 @@ export default function SupplyChain() {
     navigate("/voting");
   }
 
-  // Scroll to top on every view change
   const contentRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (contentRef.current) {
-      contentRef.current.scrollTop = 0;
-    }
+    if (contentRef.current) contentRef.current.scrollTop = 0;
   }, [view]);
 
   function navigateTo(v: View) {
@@ -1698,9 +1689,7 @@ export default function SupplyChain() {
           <div className="flex-1 overflow-y-auto" ref={contentRef}>
             <div className="max-w-6xl mx-auto px-6 py-6">
               <PageTransition viewKey={view}>
-                {view === "dashboard" && (
-                  <DashboardView onGoToVoting={handleGoToVoting} />
-                )}
+                {view === "dashboard" && <DashboardView onGoToVoting={handleGoToVoting} />}
                 {view === "telemetry-connect" && scenario && (
                   <TelemetryConnectView
                     scenario={scenario}
@@ -1727,10 +1716,7 @@ export default function SupplyChain() {
                   />
                 )}
                 {view === "decision" && scenario && (
-                  <DecisionView
-                    scenario={scenario}
-                    onBack={() => navigateTo("simulation")}
-                  />
+                  <DecisionView scenario={scenario} onBack={() => navigateTo("simulation")} />
                 )}
               </PageTransition>
             </div>

@@ -1,14 +1,17 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   CheckCircle2, RotateCcw, Rocket, Wifi,
   AlertTriangle, TrendingUp, Navigation, Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+// ─── CONFIG ───────────────────────────────────────────────────────────────────
+// 🔧 Change this to your main app's deployed URL
+const MAIN_APP_URL = "http://localhost:5173"; // e.g. "https://your-main-app.onrender.com"
+const VOTE_URL = `${window.location.origin}/vote`;
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 const STORAGE_KEY = "lena_votes";
-const VOTE_URL = `${window.location.origin}/vote`;
 
 type ScenarioId = "A" | "B" | "C";
 
@@ -333,7 +336,6 @@ function reedSolomon(data: number[], eccCount: number): number[] {
 // ─── QR Canvas Component ──────────────────────────────────────────────────────
 function QRCodeCanvas({ url, size = 200 }: { url: string; size?: number }) {
   const canvasRef = useQRCanvas(url, size);
-
   return (
     <canvas
       ref={canvasRef}
@@ -347,7 +349,6 @@ function QRCodeCanvas({ url, size = 200 }: { url: string; size?: number }) {
 
 // ─── Main VotingPage ──────────────────────────────────────────────────────────
 export default function VotingPage() {
-  const navigate = useNavigate();
   const [votes, setVotes] = useState<VoteState>(readVotes);
   const [winner, setWinner] = useState<ScenarioId | null>(null);
   const [highlightWinner, setHighlightWinner] = useState(false);
@@ -372,15 +373,12 @@ export default function VotingPage() {
 
   useEffect(() => {
     syncVotes();
-
     try {
       const ch = new BroadcastChannel("lena_votes");
       ch.onmessage = () => syncVotes();
       channelRef.current = ch;
     } catch {}
-
     pollRef.current = setInterval(syncVotes, 800);
-
     return () => {
       channelRef.current?.close();
       if (pollRef.current) clearInterval(pollRef.current);
@@ -403,11 +401,13 @@ export default function VotingPage() {
     syncVotes();
   }
 
+  // ── KEY CHANGE: redirect to main app with scenario + autostart params ──────
   function handleLaunch() {
     const target = winner ?? "A";
-    sessionStorage.setItem("lena_scenario", target);
-    sessionStorage.setItem("lena_autostart", "true");
-    navigate("/supply-chain");
+    // Build the URL to your main app's supply-chain page with query params
+    // so SupplyChain.tsx can pick them up on load and skip straight to telemetry
+    const url = `${MAIN_APP_URL}/supply-chain?scenario=${target}&autostart=true`;
+    window.location.href = url;
   }
 
   function getPct(id: ScenarioId) {
@@ -430,18 +430,10 @@ export default function VotingPage() {
       >
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
-            {/* <div
-              className="h-8 w-8 rounded flex items-center justify-center font-black text-xl"
-              style={{ background: "var(--accent)", color: "var(--primary-foreground)" }}
-            >
-              L
-            </div> */}
             <span
               className="font-bold text-lg tracking-wide"
               style={{ color: "var(--sidebar-foreground)", letterSpacing: "0.05em" }}
-            >
-              {/* <span className="font-light opacity-70">LENA</span> */}
-            </span>
+            />
           </div>
           <div className="h-5 w-px mx-2" style={{ background: "var(--sidebar-border)" }} />
           <span className="text-sm font-medium" style={{ color: "var(--sidebar-foreground)", opacity: 0.6 }}>
@@ -455,7 +447,6 @@ export default function VotingPage() {
               background: isClosed ? "var(--chart-2)" : isActive ? "var(--chart-3)" : "var(--muted-foreground)",
             }}
           />
-          {/* {isClosed ? `Voting closed · ${totalVotes} votes cast` : `Live voting… ${totalVotes} cast`} */}
         </div>
       </header>
 
@@ -774,7 +765,7 @@ export default function VotingPage() {
               Reset Votes
             </button>
 
-            {/* Launch */}
+            {/* Launch — now redirects to main app */}
             <button
               onClick={handleLaunch}
               disabled={!isClosed}
