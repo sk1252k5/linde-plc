@@ -13,8 +13,12 @@ import ItCybersecurity from "./pages/It & cybersecurity";
 import EosAssistant from "./pages/EosAssistant";
 import Settings from "./pages/Settings";
 import VisionPanel from "./VisionPanel";
+<<<<<<< HEAD
 import NuroModels from "./pages/NuroModels";
 import NuroForge from "./pages/NuroForge";
+=======
+//import NuroForge from ".pages/NuroForge";
+>>>>>>> 58d4d16096adf55877aefcc244304fbb121bdb06
 import NuroStack from "./pages/NuroStack";
 import ConsolidatedDashboard from "./pages/ConsolidatedDashboard";
 import VotingPage from "./pages/VotingPage"; // ← NEW
@@ -34,8 +38,12 @@ export const Routes: RouteObject[] = [
         children: [
           { path: "vision-panel", element: <VisionPanel /> },
           { path: "nurostack", element: <NuroStack /> },
+<<<<<<< HEAD
           { path: "nuromodels", element: <NuroModels /> },
           { path: "nuroforge", element: <NuroForge /> },
+=======
+          //{ path: "nuroforge", element: <nuroforge /> },
+>>>>>>> 58d4d16096adf55877aefcc244304fbb121bdb06
         ],
       },
       {
