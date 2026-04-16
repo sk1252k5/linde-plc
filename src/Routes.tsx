@@ -2,7 +2,7 @@ import { type RouteObject, Navigate } from "react-router-dom";
 import Layout from "./components/Layout";
 import SystemLayout from "./components/SystemLayout";
 import LandingPage from "./pages/LandingPage";
-import CommandCenter from "./pages/CommandCenter";
+
 import AgentNetwork from "./pages/AgentNetwork";
 import SupplyChain from "./pages/SupplyChain";
 import Manufacturing from "./pages/Manufacturing";
@@ -51,7 +51,7 @@ export const Routes: RouteObject[] = [
       {
         element: <Layout />,
         children: [
-          { path: "command-center", element: <CommandCenter /> },
+         
           { path: "agents", element: <AgentNetwork /> },
           { path: "supply-chain", element: <SupplyChain /> },
           { path: "manufacturing", element: <Manufacturing /> },

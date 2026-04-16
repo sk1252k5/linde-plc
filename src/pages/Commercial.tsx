@@ -245,16 +245,16 @@ const H2_SEGMENTS = [
 
 const PRICING_MAP: Record<string, Record<string, { price: string; margin: string; score: number; risk: string }>> = {
   "Oxygen (O₂)": {
-    "Bulk Supply":   { price: "₹4.82", margin: "28.4%", score: 82, risk: "Low" },
-    "On-Site":       { price: "₹3.91", margin: "31.2%", score: 78, risk: "Low" },
-    "Packaged":      { price: "₹7.40", margin: "24.1%", score: 71, risk: "Medium" },
-    "Merchant":      { price: "₹5.60", margin: "26.7%", score: 75, risk: "Low" },
+    "Bulk Supply":   { price: "£4.82", margin: "28.4%", score: 82, risk: "Low" },
+    "On-Site":       { price: "£3.91", margin: "31.2%", score: 78, risk: "Low" },
+    "Packaged":      { price: "£7.40", margin: "24.1%", score: 71, risk: "Medium" },
+    "Merchant":      { price: "£5.60", margin: "26.7%", score: 75, risk: "Low" },
   },
   "Nitrogen (N₂)": {
-    "Bulk Supply":   { price: "₹3.20", margin: "22.8%", score: 79, risk: "Low" },
-    "On-Site":       { price: "₹2.74", margin: "29.4%", score: 84, risk: "Low" },
-    "Packaged":      { price: "₹5.80", margin: "21.3%", score: 68, risk: "Medium" },
-    "Merchant":      { price: "₹4.10", margin: "24.0%", score: 72, risk: "Low" },
+    "Bulk Supply":   { price: "£3.20", margin: "22.8%", score: 79, risk: "Low" },
+    "On-Site":       { price: "£2.74", margin: "29.4%", score: 84, risk: "Low" },
+    "Packaged":      { price: "£5.80", margin: "21.3%", score: 68, risk: "Medium" },
+    "Merchant":      { price: "£4.10", margin: "24.0%", score: 72, risk: "Low" },
   },
   "Hydrogen (H₂)": {
     "Bulk Supply":   { price: "₹6.20", margin: "33.1%", score: 88, risk: "Low" },
@@ -528,8 +528,8 @@ export default function Commercial() {
                       AI Recommended Pricing
                     </p>
                     <p className="font-heading text-4xl font-bold tracking-tight text-chart-2">
-                      {pricing.price} / m³
-                    </p>
+  {pricing.price} / m³
+</p>
                     <p className="text-xs text-muted-foreground">
                       Energy pass-through included · Margin: {pricing.margin} · Risk-adjusted
                     </p>
@@ -594,11 +594,11 @@ export default function Commercial() {
                     </TableHeader>
                     <TableBody>
                       {[
-                        { gas: "Oxygen (O₂)",   price: "₹4.82 / m³", margin: "28.4%", score: 82, trend: "+2.1%", color: "text-chart-2" },
-                        { gas: "Nitrogen (N₂)", price: "₹3.20 / m³", margin: "22.8%", score: 79, trend: "+0.8%", color: "text-chart-2" },
-                        { gas: "Hydrogen (H₂)", price: "₹6.20 / m³", margin: "33.1%", score: 88, trend: "+8.4%", color: "text-chart-5" },
-                        { gas: "Argon (Ar)",    price: "₹14.20 / m³", margin: "38.4%", score: 76, trend: "+1.2%", color: "text-chart-3" },
-                        { gas: "CO₂",           price: "₹2.40 / m³", margin: "19.2%", score: 71, trend: "−0.4%", color: "text-muted-foreground" },
+                        { gas: "Oxygen (O₂)",   price: "£4.82 / m³", margin: "28.4%", score: 82, trend: "+2.1%", color: "text-chart-2" },
+                        { gas: "Nitrogen (N₂)", price: "£3.20 / m³", margin: "22.8%", score: 79, trend: "+0.8%", color: "text-chart-2" },
+                        { gas: "Hydrogen (H₂)", price: "£6.20 / m³", margin: "33.1%", score: 88, trend: "+8.4%", color: "text-chart-5" },
+                        { gas: "Argon (Ar)",    price: "£14.20 / m³", margin: "38.4%", score: 76, trend: "+1.2%", color: "text-chart-3" },
+                        { gas: "CO₂",           price: "£2.40 / m³", margin: "19.2%", score: 71, trend: "−0.4%", color: "text-muted-foreground" },
                       ].map((row) => (
                         <TableRow key={row.gas} className="border-border hover:bg-muted/30">
                           <TableCell className="px-5 py-3 text-sm font-medium text-foreground">
