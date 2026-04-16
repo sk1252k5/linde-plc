@@ -7,7 +7,7 @@ import { LogoutButton } from "./logout-button"
 import { Button } from "./ui/button"
 
 const PAGE_META: Record<string, { title: string; section: string }> = {
-  "/": { title: "Command Center", section: "Core" },
+  "/": { title: "Command Center", section: "Core" },  
   "/agents": { title: "AI Agent Network", section: "Core" },
   "/supply-chain": { title: "Supply Chain", section: "Vision Panel" },
   "/manufacturing": { title: "Manufacturing", section: "Vision Panel" },

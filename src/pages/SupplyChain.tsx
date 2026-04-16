@@ -177,18 +177,24 @@ const SCENARIOS: Record<ScenarioId, Scenario> = {
       },
     ],
     routeOptions: [
-      { id: "R1", label: "Priority-first (LENA Optimal)", recommended: true,
+      {
+        id: "R1", label: "Priority-first (LENA Optimal)", recommended: true,
         stops: ["Scunthorpe Depot", "Helios Steel", "BioPharm", "CryoMed Hospital"],
         totalKm: 98, totalTime: 4.2, fuelCost: 187, co2kg: 94, onTimeRisk: "LOW",
-        tags: ["LENA Recommended", "Customer Satisfaction"] },
-      { id: "R2", label: "Geographic shortest path",
+        tags: ["LENA Recommended", "Customer Satisfaction"]
+      },
+      {
+        id: "R2", label: "Geographic shortest path",
         stops: ["Scunthorpe Depot", "BioPharm", "CryoMed Hospital", "Helios Steel"],
         totalKm: 89, totalTime: 5.8, fuelCost: 171, co2kg: 86, onTimeRisk: "HIGH",
-        tags: ["Quick Delivery"] },
-      { id: "R3", label: "Revenue-weighted",
+        tags: ["Quick Delivery"]
+      },
+      {
+        id: "R3", label: "Revenue-weighted",
         stops: ["Scunthorpe Depot", "Helios Steel", "CryoMed Hospital", "BioPharm"],
         totalKm: 112, totalTime: 4.9, fuelCost: 215, co2kg: 108, onTimeRisk: "MEDIUM",
-        tags: ["Cost Efficient"] },
+        tags: ["Cost Efficient"]
+      },
     ],
     lenadecision: "Helios Steel at 10% with 2.1 hrs — dispatching immediately. Take-or-Pay penalty £14.2K/hr averted. BioPharm second at 11.1 hrs. CryoMed last with 28.6hr buffer.",
   },
@@ -236,18 +242,24 @@ const SCENARIOS: Record<ScenarioId, Scenario> = {
       },
     ],
     routeOptions: [
-      { id: "R1", label: "Dual-critical optimised (LENA Optimal)", recommended: true,
+      {
+        id: "R1", label: "Dual-critical optimised (LENA Optimal)", recommended: true,
         stops: ["Scunthorpe Depot", "Helios Steel", "CryoMed Hospital", "BioPharm"],
         totalKm: 104, totalTime: 4.7, fuelCost: 199, co2kg: 101, onTimeRisk: "LOW",
-        tags: ["LENA Recommended", "Customer Satisfaction"] },
-      { id: "R2", label: "Geographic shortest path",
+        tags: ["LENA Recommended", "Customer Satisfaction"]
+      },
+      {
+        id: "R2", label: "Geographic shortest path",
         stops: ["Scunthorpe Depot", "BioPharm", "CryoMed Hospital", "Helios Steel"],
         totalKm: 89, totalTime: 6.1, fuelCost: 171, co2kg: 86, onTimeRisk: "HIGH",
-        tags: ["Quick Delivery"] },
-      { id: "R3", label: "Revenue-weighted",
+        tags: ["Quick Delivery"]
+      },
+      {
+        id: "R3", label: "Revenue-weighted",
         stops: ["Scunthorpe Depot", "Helios Steel", "BioPharm", "CryoMed Hospital"],
         totalKm: 118, totalTime: 5.3, fuelCost: 226, co2kg: 113, onTimeRisk: "MEDIUM",
-        tags: ["Cost Efficient"] },
+        tags: ["Cost Efficient"]
+      },
     ],
     lenadecision: "Two customers simultaneously critical. Helios Steel nearest with Take-or-Pay risk. CryoMed life-critical facility served second. BioPharm demand surge served last with buffer.",
   },
@@ -295,18 +307,24 @@ const SCENARIOS: Record<ScenarioId, Scenario> = {
       },
     ],
     routeOptions: [
-      { id: "R1", label: "Detour-aware safe route (LENA Optimal)", recommended: true,
+      {
+        id: "R1", label: "Detour-aware safe route (LENA Optimal)", recommended: true,
         stops: ["Scunthorpe Depot", "BioPharm", "Helios Steel", "CryoMed (via M62)"],
         totalKm: 138, totalTime: 5.9, fuelCost: 264, co2kg: 132, onTimeRisk: "LOW",
-        tags: ["LENA Recommended", "Customer Satisfaction"] },
-      { id: "R2", label: "Standard geographic (A63 — flooded)",
+        tags: ["LENA Recommended", "Customer Satisfaction"]
+      },
+      {
+        id: "R2", label: "Standard geographic (A63 — flooded)",
         stops: ["Scunthorpe Depot", "BioPharm", "CryoMed (A63 — blocked)", "Helios Steel"],
         totalKm: 89, totalTime: 9.1, fuelCost: 171, co2kg: 86, onTimeRisk: "HIGH",
-        tags: ["Quick Delivery"] },
-      { id: "R3", label: "Revenue-weighted",
+        tags: ["Quick Delivery"]
+      },
+      {
+        id: "R3", label: "Revenue-weighted",
         stops: ["Scunthorpe Depot", "Helios Steel", "BioPharm", "CryoMed (M62)"],
         totalKm: 149, totalTime: 6.8, fuelCost: 285, co2kg: 143, onTimeRisk: "MEDIUM",
-        tags: ["Cost Efficient"] },
+        tags: ["Cost Efficient"]
+      },
     ],
     lenadecision: "A63 flooding confirmed via telemetry. BioPharm at 4.4 hrs — nearest and first. CryoMed rerouted via M62 (+26 km). Helios Steel at 50% has safe buffer.",
   },
@@ -838,10 +856,10 @@ function TelemetryConnectView({ scenario, onComplete }: { scenario: Scenario; on
       <div className="text-center">
         <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-1.5 rounded-full text-xs font-mono font-semibold uppercase tracking-wider mb-4">
           <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-          Connecting to Customers Telemetry Data
+
         </div>
-        <h2 className="text-2xl font-bold">Establishing Live Sensor Connections</h2>
-        <p className="text-muted-foreground mt-2 text-sm">Reading IoT tank sensors from customer sites</p>
+        <h2 className="text-2xl font-bold">Reading Live Sensor Data from Customers</h2>
+        {/* <p className="text-muted-foreground mt-2 text-sm">Reading IoT tank sensors from customer sites</p> */}
       </div>
 
       <div className="space-y-4">
@@ -850,10 +868,10 @@ function TelemetryConnectView({ scenario, onComplete }: { scenario: Scenario; on
           const isDone = progress[idx] >= 100;
           const isPending = idx > activeIdx && progress[idx] === 0;
           const statusColor = customer.priority === "CRITICAL"
-          ? "border-red-300 bg-red-50/50"
-          : customer.priority === "HIGH"
-          ? "border-orange-300 bg-orange-50/50"
-          : "border-border bg-card";
+            ? "border-red-300 bg-red-50/50"
+            : customer.priority === "HIGH"
+              ? "border-orange-300 bg-orange-50/50"
+              : "border-border bg-card";
           return (
             <div
               key={customer.id}
@@ -889,9 +907,9 @@ function TelemetryConnectView({ scenario, onComplete }: { scenario: Scenario; on
                     "text-orange-500": customer.hoursToEmpty >= 4 && customer.hoursToEmpty < 12,
                     "text-emerald-600": customer.hoursToEmpty >= 12,
                   })}>
-                    {customer.hoursToEmpty}h
+
                   </div>
-                  <div className="text-[10px] text-muted-foreground">to empty</div>
+                  {/* <div className="text-[10px] text-muted-foreground">to empty</div> */}
                 </div>
               </div>
 
