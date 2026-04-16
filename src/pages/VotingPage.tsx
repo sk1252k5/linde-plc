@@ -430,22 +430,22 @@ export default function VotingPage() {
       >
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
-            <div
+            {/* <div
               className="h-8 w-8 rounded flex items-center justify-center font-black text-xl"
               style={{ background: "var(--accent)", color: "var(--primary-foreground)" }}
             >
               L
-            </div>
+            </div> */}
             <span
               className="font-bold text-lg tracking-wide"
               style={{ color: "var(--sidebar-foreground)", letterSpacing: "0.05em" }}
             >
-              Linde <span className="font-light opacity-70">LENA</span>
+              {/* <span className="font-light opacity-70">LENA</span> */}
             </span>
           </div>
           <div className="h-5 w-px mx-2" style={{ background: "var(--sidebar-border)" }} />
           <span className="text-sm font-medium" style={{ color: "var(--sidebar-foreground)", opacity: 0.6 }}>
-            Supply Chain AI · Live Demo
+            Supply Chain AI · Live
           </span>
         </div>
         <div className="flex items-center gap-2 text-xs font-mono" style={{ color: "var(--sidebar-foreground)", opacity: 0.7 }}>
@@ -455,7 +455,7 @@ export default function VotingPage() {
               background: isClosed ? "var(--chart-2)" : isActive ? "var(--chart-3)" : "var(--muted-foreground)",
             }}
           />
-          {isClosed ? `Voting closed · ${totalVotes} votes cast` : `Live voting… ${totalVotes} cast`}
+          {/* {isClosed ? `Voting closed · ${totalVotes} votes cast` : `Live voting… ${totalVotes} cast`} */}
         </div>
       </header>
 

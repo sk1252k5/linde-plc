@@ -1,10 +1,11 @@
 // ─── SupplyChain.tsx ──────────────────────────────────────────────────────────
-// Changes from original:
-//   1. DashboardView: "Launch" button replaced with a "Go to Voting" button
-//      that navigates to /voting (where the audience-voted scenario is selected).
-//   2. handleLaunch() in the main component now reads from sessionStorage
-//      (set by VotingPage) instead of hard-coding scenario A.
-// All other code is identical to the original.
+// Changes:
+//   1. DemandAllocationPie removed from SimulationView
+//   2. RouteOptions moved from SimulationView → DecisionView (below pie)
+//   3. "Modify Decision" scrolls to route options section in DecisionView
+//   4. Back navigation added between all screens (no re-run of agents)
+//   5. AgentWorkingView shows finished state when revisited
+//   6. Page transitions animate from top
 
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
@@ -24,7 +25,7 @@ import {
   Thermometer, Zap, ArrowRight, ChevronRight, MapPin,
   AlertCircle, BarChart3, Navigation, Package, Brain,
   Shield, CreditCard, Activity, Wifi, Database,
-  RotateCcw, Globe, Droplets, XCircle, Vote,
+  RotateCcw, Globe, Droplets, XCircle, Vote, ArrowLeft,
 } from "lucide-react";
 
 type ScenarioId = "A" | "B" | "C";
@@ -346,7 +347,7 @@ function buildAgentSteps(s: Scenario): AgentStep[] {
     {
       agentName: "Telemetry Agent",
       icon: Wifi, color: "text-blue-600",
-      action: "Reading live IoT sensor feeds",
+      action: "Analysing live IoT sensor feeds",
       detail: "Scanning 3 customer tank sensors · 847 fleet GPS pings · weather APIs",
       dataPoints: [
         { label: c[0].name, value: `${c[0].currentLevel}% · ${c[0].hoursToEmpty}h to empty` },
@@ -664,7 +665,6 @@ function TankTelemetrySection() {
 }
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
-// ✅ CHANGE: "Launch" button replaced with "Go to Audience Vote" button
 function DashboardView({ onGoToVoting }: { onGoToVoting: () => void }) {
   return (
     <div className="space-y-6">
@@ -796,7 +796,6 @@ function DashboardView({ onGoToVoting }: { onGoToVoting: () => void }) {
 
       <TankTelemetrySection />
 
-      {/* ✅ CHANGED: "Launch" CTA now routes to /voting instead of triggering simulation directly */}
       <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20 rounded-xl p-6 flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -817,7 +816,9 @@ function DashboardView({ onGoToVoting }: { onGoToVoting: () => void }) {
 }
 
 // ─── Telemetry Connect View ───────────────────────────────────────────────────
-function TelemetryConnectView({ scenario, onComplete }: { scenario: Scenario; onComplete: () => void }) {
+function TelemetryConnectView({ scenario, onComplete, onBack }: {
+  scenario: Scenario; onComplete: () => void; onBack: () => void;
+}) {
   const customers = scenario.customers;
   const [progress, setProgress] = useState<number[]>([0, 0, 0]);
   const [activeIdx, setActiveIdx] = useState(0);
@@ -849,6 +850,11 @@ function TelemetryConnectView({ scenario, onComplete }: { scenario: Scenario; on
 
   return (
     <div className="max-w-2xl mx-auto py-12 space-y-8">
+      <div className="flex items-center gap-3">
+        <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground" onClick={onBack}>
+          <ArrowLeft className="h-4 w-4" /> Back
+        </Button>
+      </div>
       <div className="text-center">
         <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-1.5 rounded-full text-xs font-mono font-semibold uppercase tracking-wider mb-4">
           <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
@@ -905,13 +911,19 @@ function TelemetryConnectView({ scenario, onComplete }: { scenario: Scenario; on
 }
 
 // ─── Agent Working View ───────────────────────────────────────────────────────
-function AgentWorkingView({ scenario, onComplete }: { scenario: Scenario; onComplete: () => void }) {
+// agentsDone prop: if true, skip animation and show finished state immediately
+function AgentWorkingView({ scenario, onComplete, onBack, agentsDone }: {
+  scenario: Scenario; onComplete: () => void; onBack: () => void; agentsDone: boolean;
+}) {
   const steps = buildAgentSteps(scenario);
-  const [currentStep, setCurrentStep] = useState(0);
-  const [completedSteps, setCompletedSteps] = useState<number[]>([]);
-  const [stepProgress, setStepProgress] = useState(0);
-  const [logs, setLogs] = useState<string[]>([]);
-  const [done, setDone] = useState(false);
+  const allIndices = steps.map((_, i) => i);
+
+  // If already done, show finished state without running animation
+  const [currentStep, setCurrentStep] = useState(agentsDone ? steps.length - 1 : 0);
+  const [completedSteps, setCompletedSteps] = useState<number[]>(agentsDone ? allIndices : []);
+  const [stepProgress, setStepProgress] = useState(agentsDone ? 100 : 0);
+  const [logs, setLogs] = useState<string[]>(agentsDone ? buildAllLogs(scenario, steps) : []);
+  const [done, setDone] = useState(agentsDone);
   const logRef = useRef<HTMLDivElement>(null);
 
   const logMessages: string[][] = [
@@ -925,6 +937,7 @@ function AgentWorkingView({ scenario, onComplete }: { scenario: Scenario; onComp
   ];
 
   useEffect(() => {
+    if (agentsDone) return; // skip animation if already completed before
     let elapsed = 0;
     steps.forEach((step, idx) => {
       setTimeout(() => {
@@ -944,21 +957,32 @@ function AgentWorkingView({ scenario, onComplete }: { scenario: Scenario; onComp
   }, []);
 
   useEffect(() => {
+    if (agentsDone) return;
     const iv = setInterval(() => setStepProgress(p => Math.min(p + 3, 100)), 40);
     return () => clearInterval(iv);
-  }, [currentStep]);
+  }, [currentStep, agentsDone]);
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center gap-3">
+        <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground" onClick={onBack}>
+          <ArrowLeft className="h-4 w-4" /> Back
+        </Button>
+        {agentsDone && (
+          <span className="text-xs text-emerald-600 font-semibold flex items-center gap-1.5">
+            <CheckCircle2 className="h-3.5 w-3.5" /> All agents completed
+          </span>
+        )}
+      </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-card rounded-xl border p-5 space-y-3">
           <h3 className="font-semibold text-sm flex items-center gap-2">
-            <Activity className="h-4 w-4 text-primary animate-pulse" /> LENA Agent Pipeline
+            <Activity className={cn("h-4 w-4 text-primary", !agentsDone && "animate-pulse")} /> LENA Agent Pipeline
           </h3>
           {steps.map((step, idx) => {
-            const isActive = currentStep === idx && !completedSteps.includes(idx);
+            const isActive = !agentsDone && currentStep === idx && !completedSteps.includes(idx);
             const isDone = completedSteps.includes(idx);
-            const isPending = idx > currentStep;
+            const isPending = !agentsDone && idx > currentStep;
             return (
               <div key={idx} className={cn("rounded-lg border p-3 transition-all duration-300", {
                 "border-primary bg-primary/5": isActive,
@@ -1021,10 +1045,43 @@ function AgentWorkingView({ scenario, onComplete }: { scenario: Scenario; onComp
               {!done && <div className="flex gap-2 text-muted-foreground/50"><span className="animate-pulse">▌</span></div>}
             </div>
           </div>
+          {agentsDone && (
+            <div className="flex justify-end">
+              <Button size="lg" className="gap-2" onClick={onComplete}>
+                View Routing Analysis <ArrowRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
+}
+
+function buildAllLogs(scenario: Scenario, steps: AgentStep[]): string[] {
+  return [
+    "[Telemetry] Connecting to IoT hub…",
+    "[Telemetry] Tank sensors online · 3/3 customers",
+    "[Telemetry] Alert: Customer at threshold",
+    "[Demand] Computing usage curves…",
+    `[Demand] 7-day demand forecast: ${scenario.expectedDemand7Days} m³`,
+    "[Demand] Allocations balanced to truck capacity",
+    "[Pricing] Loading contract rate cards…",
+    "[Pricing] Emergency surcharge applied",
+    "[Pricing] Net margin: 18.4% optimised",
+    "[Plant] Checking depot manifest…",
+    `[Plant] ${scenario.truckId} certified N₂ · ${scenario.truckCapacity}m³`,
+    "[Plant] ETA depot departure: T+12min",
+    "[Routing] Evaluating 3 route options…",
+    `[Routing] Priority-first optimal · ${scenario.routeOptions[0].totalKm} km`,
+    "[Routing] All SLAs met · LOW risk",
+    "[Risk] Loading contract database…",
+    "[Risk] Take-or-Pay clause active · penalties scheduled",
+    "[Risk] Credit scores assessed",
+    "[LENA] Synthesising agent outputs…",
+    "[LENA] Decision package ready",
+    "[LENA] Awaiting COO approval",
+  ];
 }
 
 function TerminalIcon({ className }: { className?: string }) {
@@ -1159,19 +1216,22 @@ function DemandAllocationPie({ customers, truckCapacity }: { customers: Customer
               </div>
             </div>
           ))}
-          <div className="pt-1 border-t text-[10px] text-emerald-600 font-semibold flex items-center gap-1">
-            <CheckCircle2 className="h-3 w-3" /> Truck fully allocated — 100%
-          </div>
         </div>
       </div>
     </div>
   );
 }
 
-function SimulationView({ scenario, onDecision }: { scenario: Scenario; onDecision: () => void }) {
-  const customers = [...scenario.customers].sort((a, b) => a.hoursToEmpty - b.hoursToEmpty);
-  const inventoryStatus = scenario.inventoryLevel >= scenario.expectedDemand7Days ? "sufficient" : "low";
-  const [selectedRouteId, setSelectedRouteId] = useState<string>(scenario.routeOptions.find(r => r.recommended)?.id ?? scenario.routeOptions[0].id);
+// ─── Route Options Component (shared between Simulation & Decision views) ─────
+function RouteOptionsSection({
+  scenario,
+  selectedRouteId,
+  onSelectRoute,
+}: {
+  scenario: Scenario;
+  selectedRouteId: string;
+  onSelectRoute: (id: string) => void;
+}) {
   const tagStyles: Record<string, string> = {
     "LENA Recommended": "bg-primary/10 text-primary border border-primary/30",
     "Customer Satisfaction": "bg-emerald-100 text-emerald-700 border border-emerald-300",
@@ -1179,79 +1239,188 @@ function SimulationView({ scenario, onDecision }: { scenario: Scenario; onDecisi
     "Cost Efficient": "bg-amber-100 text-amber-700 border border-amber-300",
   };
   return (
+    <div className="space-y-3">
+      {scenario.routeOptions.map(r => {
+        const isSelected = selectedRouteId === r.id;
+        return (
+          <div
+            key={r.id}
+            onClick={() => onSelectRoute(r.id)}
+            className={cn(
+              "rounded-xl border p-4 flex items-start gap-4 cursor-pointer transition-all duration-200",
+              isSelected ? "border-primary bg-primary/5 ring-2 ring-primary/20" : "border-border hover:border-primary/40 hover:bg-muted/30"
+            )}
+          >
+            <div className="shrink-0 mt-0.5">
+              {isSelected
+                ? <CheckCircle2 className="h-5 w-5 text-primary" />
+                : <div className="h-5 w-5 rounded-full border-2 border-muted-foreground/30" />}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                <span className="font-semibold text-sm">{r.label}</span>
+                {r.tags.map(tag => (
+                  <span key={tag} className={cn("text-[10px] px-2 py-0.5 rounded-full font-semibold", tagStyles[tag] || "bg-muted text-muted-foreground")}>{tag}</span>
+                ))}
+                <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full ml-auto", {
+                  "bg-emerald-100 text-emerald-700": r.onTimeRisk === "LOW",
+                  "bg-orange-100 text-orange-700": r.onTimeRisk === "MEDIUM",
+                  "bg-red-100 text-red-700": r.onTimeRisk === "HIGH",
+                })}>{r.onTimeRisk} risk</span>
+              </div>
+              <div className="flex gap-1 flex-wrap mb-2">
+                {r.stops.map((stop, si) => (
+                  <div key={si} className="flex items-center gap-1">
+                    <span className="text-xs text-muted-foreground">{stop}</span>
+                    {si < r.stops.length - 1 && <ChevronRight className="h-3 w-3 text-muted-foreground/50" />}
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-4 gap-3 text-xs">
+                <div><span className="text-muted-foreground">Distance</span><p className="font-semibold font-mono">{r.totalKm} km</p></div>
+                <div><span className="text-muted-foreground">Duration</span><p className="font-semibold font-mono">{r.totalTime} hrs</p></div>
+                <div><span className="text-muted-foreground">Fuel cost</span><p className="font-semibold font-mono">£{r.fuelCost}</p></div>
+                <div><span className="text-muted-foreground">CO₂</span><p className="font-semibold font-mono">{r.co2kg} kg</p></div>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Simulation (Routing Agent) View ─────────────────────────────────────────
+// Demand pie REMOVED, Route options REMOVED (moved to DecisionView)
+function SimulationView({ scenario, onDecision, onBack }: {
+  scenario: Scenario; onDecision: () => void; onBack: () => void;
+}) {
+  const customers = [...scenario.customers].sort((a, b) => a.hoursToEmpty - b.hoursToEmpty);
+  const inventoryStatus = scenario.inventoryLevel >= scenario.expectedDemand7Days ? "sufficient" : "low";
+
+  return (
     <div className="space-y-6">
+      <div className="flex items-center gap-3">
+        <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground" onClick={onBack}>
+          <ArrowLeft className="h-4 w-4" /> Back
+        </Button>
+      </div>
       <div>
-        <h3 className="font-semibold text-sm mb-3 flex items-center gap-2"><Thermometer className="h-4 w-4 text-primary" /> Customer Telemetry — Priority by Time-to-Empty</h3>
-        <div className="grid grid-cols-3 gap-4">{customers.map((c, i) => <CustomerCard key={c.id} c={c} rank={i + 1} />)}</div>
+        <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+          <Thermometer className="h-4 w-4 text-primary" /> Customer Telemetry — Priority by Time-to-Empty
+        </h3>
+        <div className="grid grid-cols-3 gap-4">
+          {customers.map((c, i) => <CustomerCard key={c.id} c={c} rank={i + 1} />)}
+        </div>
       </div>
       <div className="grid grid-cols-4 gap-3">
-        <div className="bg-card rounded-xl border p-4"><p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Gas Type</p><p className="font-bold text-lg text-primary">{scenario.gasType}</p><p className="text-[11px] text-muted-foreground mt-1">This dispatch</p></div>
-        <div className="bg-card rounded-xl border p-4"><p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Inventory Level</p><p className="font-bold text-2xl font-mono">{scenario.inventoryLevel}<span className="text-sm font-normal text-muted-foreground ml-1">m³</span></p><p className={cn("text-[11px] mt-1 font-semibold", inventoryStatus === "sufficient" ? "text-emerald-600" : "text-orange-600")}>{inventoryStatus === "sufficient" ? "✓ Sufficient" : "⚠ Monitor"}</p></div>
-        <div className="bg-card rounded-xl border p-4"><p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Expected Demand (7d)</p><p className="font-bold text-2xl font-mono">{scenario.expectedDemand7Days}<span className="text-sm font-normal text-muted-foreground ml-1">m³</span></p><p className="text-[11px] text-muted-foreground mt-1">Forecast period</p></div>
-        <div className="bg-card rounded-xl border p-4"><p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Customers to Act On</p><p className="font-bold text-2xl font-mono">{customers.length}</p><p className="text-[11px] text-muted-foreground mt-1">{customers.filter(c => c.priority === "CRITICAL").length} Critical · {customers.filter(c => c.priority === "HIGH").length} High</p></div>
-      </div>
-      <DemandAllocationPie customers={customers} truckCapacity={scenario.truckCapacity} />
-      <div>
-        <h3 className="font-semibold text-sm mb-3 flex items-center gap-2"><Navigation className="h-4 w-4 text-primary" /> Route Options Evaluated</h3>
-        <div className="space-y-3">
-          {scenario.routeOptions.map(r => {
-            const isSelected = selectedRouteId === r.id;
-            return (
-              <div key={r.id} onClick={() => setSelectedRouteId(r.id)} className={cn("rounded-xl border p-4 flex items-start gap-4 cursor-pointer transition-all duration-200", isSelected ? "border-primary bg-primary/5 ring-2 ring-primary/20" : "border-border hover:border-primary/40 hover:bg-muted/30")}>
-                <div className="shrink-0 mt-0.5">{isSelected ? <CheckCircle2 className="h-5 w-5 text-primary" /> : <div className="h-5 w-5 rounded-full border-2 border-muted-foreground/30" />}</div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-2 flex-wrap">
-                    <span className="font-semibold text-sm">{r.label}</span>
-                    {r.tags.map(tag => <span key={tag} className={cn("text-[10px] px-2 py-0.5 rounded-full font-semibold", tagStyles[tag] || "bg-muted text-muted-foreground")}>{tag}</span>)}
-                    <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full ml-auto", { "bg-emerald-100 text-emerald-700": r.onTimeRisk === "LOW", "bg-orange-100 text-orange-700": r.onTimeRisk === "MEDIUM", "bg-red-100 text-red-700": r.onTimeRisk === "HIGH" })}>{r.onTimeRisk} risk</span>
-                  </div>
-                  <div className="flex gap-1 flex-wrap mb-2">
-                    {r.stops.map((stop, si) => (
-                      <div key={si} className="flex items-center gap-1"><span className="text-xs text-muted-foreground">{stop}</span>{si < r.stops.length - 1 && <ChevronRight className="h-3 w-3 text-muted-foreground/50" />}</div>
-                    ))}
-                  </div>
-                  <div className="grid grid-cols-4 gap-3 text-xs">
-                    <div><span className="text-muted-foreground">Distance</span><p className="font-semibold font-mono">{r.totalKm} km</p></div>
-                    <div><span className="text-muted-foreground">Duration</span><p className="font-semibold font-mono">{r.totalTime} hrs</p></div>
-                    <div><span className="text-muted-foreground">Fuel cost</span><p className="font-semibold font-mono">£{r.fuelCost}</p></div>
-                    <div><span className="text-muted-foreground">CO₂</span><p className="font-semibold font-mono">{r.co2kg} kg</p></div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+        <div className="bg-card rounded-xl border p-4">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Gas Type</p>
+          <p className="font-bold text-lg text-primary">{scenario.gasType}</p>
+          <p className="text-[11px] text-muted-foreground mt-1">This dispatch</p>
+        </div>
+        <div className="bg-card rounded-xl border p-4">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Inventory Level</p>
+          <p className="font-bold text-2xl font-mono">{scenario.inventoryLevel}<span className="text-sm font-normal text-muted-foreground ml-1">m³</span></p>
+          <p className={cn("text-[11px] mt-1 font-semibold", inventoryStatus === "sufficient" ? "text-emerald-600" : "text-orange-600")}>
+            {inventoryStatus === "sufficient" ? "✓ Sufficient" : "⚠ Monitor"}
+          </p>
+        </div>
+        <div className="bg-card rounded-xl border p-4">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Expected Demand (7d)</p>
+          <p className="font-bold text-2xl font-mono">{scenario.expectedDemand7Days}<span className="text-sm font-normal text-muted-foreground ml-1">m³</span></p>
+          <p className="text-[11px] text-muted-foreground mt-1">Forecast period</p>
+        </div>
+        <div className="bg-card rounded-xl border p-4">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Customers to Act On</p>
+          <p className="font-bold text-2xl font-mono">{customers.length}</p>
+          <p className="text-[11px] text-muted-foreground mt-1">
+            {customers.filter(c => c.priority === "CRITICAL").length} Critical · {customers.filter(c => c.priority === "HIGH").length} High
+          </p>
         </div>
       </div>
       <div className="flex justify-end">
-        <Button size="lg" className="gap-2" onClick={onDecision}>View Decision Summary <ArrowRight className="h-4 w-4" /></Button>
+        <Button size="lg" className="gap-2" onClick={onDecision}>
+          View Decision Summary <ArrowRight className="h-4 w-4" />
+        </Button>
       </div>
     </div>
   );
 }
 
-function DecisionView({ scenario, onModify }: { scenario: Scenario; onModify: () => void }) {
+// ─── Decision View ────────────────────────────────────────────────────────────
+function DecisionView({ scenario, onBack }: { scenario: Scenario; onBack: () => void }) {
   const [approved, setApproved] = useState(false);
   const [rejected, setRejected] = useState(false);
+  const [selectedRouteId, setSelectedRouteId] = useState<string>(
+    scenario.routeOptions.find(r => r.recommended)?.id ?? scenario.routeOptions[0].id
+  );
+
+  // Ref for scrolling to route options section when "Modify Decision" is clicked
+  const routeOptionsRef = useRef<HTMLDivElement>(null);
+
   const recommended = scenario.routeOptions.find(r => r.recommended)!;
+  const selectedRoute = scenario.routeOptions.find(r => r.id === selectedRouteId) ?? recommended;
   const customers = [...scenario.customers].sort((a, b) => a.hoursToEmpty - b.hoursToEmpty);
   const totalRevenue = customers.reduce((s, c) => s + c.annualRevenue, 0);
   const totalContract = customers.reduce((s, c) => s + c.contractValue, 0);
   const penaltyAvertedMax = customers[0].penaltyPerHour * 8;
+
+  function handleModify() {
+    setApproved(false);
+    setRejected(false);
+    // Scroll to route options section
+    routeOptionsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between">
-        <div><h2 className="text-xl font-bold">Decision Summary</h2><p className="text-sm text-muted-foreground mt-1">{scenario.label} · Truck {scenario.truckId} · Generated by LENA</p></div>
-        <div className="flex items-center gap-2"><Clock className="h-4 w-4 text-muted-foreground" /><span className="text-xs text-muted-foreground font-mono">{new Date().toLocaleTimeString()}</span></div>
+      <div className="flex items-center gap-3">
+        <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground" onClick={onBack}>
+          <ArrowLeft className="h-4 w-4" /> Back
+        </Button>
       </div>
+      <div className="flex items-start justify-between">
+        <div>
+          <h2 className="text-xl font-bold">Decision Summary</h2>
+          <p className="text-sm text-muted-foreground mt-1">{scenario.label} · Truck {scenario.truckId} · Generated by LENA</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Clock className="h-4 w-4 text-muted-foreground" />
+          <span className="text-xs text-muted-foreground font-mono">{new Date().toLocaleTimeString()}</span>
+        </div>
+      </div>
+
+      {/* Demand Allocation Pie */}
       <DemandAllocationPie customers={customers} truckCapacity={scenario.truckCapacity} />
+
+      {/* Route Options — now in Decision Summary */}
+      <div ref={routeOptionsRef}>
+        <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+          <Navigation className="h-4 w-4 text-primary" /> Route Options Evaluated
+        </h3>
+        <RouteOptionsSection
+          scenario={scenario}
+          selectedRouteId={selectedRouteId}
+          onSelectRoute={setSelectedRouteId}
+        />
+      </div>
+
       <div className="bg-card rounded-xl border p-5">
-        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Recommended Delivery Sequence — {scenario.truckId}</h3>
+        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+          Recommended Delivery Sequence — {scenario.truckId}
+        </h3>
         <div className="space-y-3">
           {customers.map((c, i) => (
             <div key={c.id} className="flex gap-4 items-start">
-              <div className={cn("h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0", { "bg-red-500": i === 0, "bg-orange-400": i === 1, "bg-blue-500": i === 2 })}>{i + 1}</div>
+              <div className={cn("h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0", {
+                "bg-red-500": i === 0, "bg-orange-400": i === 1, "bg-blue-500": i === 2,
+              })}>{i + 1}</div>
               <div className="flex-1 p-3 rounded-lg bg-muted/40">
-                <div className="flex items-center justify-between"><span className="font-semibold text-sm">{c.name}</span><PriorityBadge priority={c.priority} /></div>
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-sm">{c.name}</span>
+                  <PriorityBadge priority={c.priority} />
+                </div>
                 <div className="flex flex-wrap gap-4 mt-1.5 text-xs text-muted-foreground">
                   <span>Deliver: <span className="font-mono font-semibold text-foreground">{c.deliveryRequired} m³ N₂</span></span>
                   <span>Buffer: <span className="font-semibold text-foreground">{c.hoursToEmpty.toFixed(1)} hrs left</span></span>
@@ -1269,11 +1438,22 @@ function DecisionView({ scenario, onModify }: { scenario: Scenario; onModify: ()
           ))}
         </div>
       </div>
+
       <div className="bg-card rounded-xl border p-5">
         <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Customer Credit Risk Profile</h3>
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
-            <thead><tr className="border-b text-muted-foreground"><th className="text-left py-2 pr-3 font-medium">Customer</th><th className="text-left py-2 pr-3 font-medium">Credit Score</th><th className="text-left py-2 pr-3 font-medium">Payment Terms</th><th className="text-left py-2 pr-3 font-medium">Last Payment</th><th className="text-left py-2 pr-3 font-medium">On-Time %</th><th className="text-left py-2 pr-3 font-medium">Distance (Plant)</th><th className="text-left py-2 font-medium">SLA Penalty/hr</th></tr></thead>
+            <thead>
+              <tr className="border-b text-muted-foreground">
+                <th className="text-left py-2 pr-3 font-medium">Customer</th>
+                <th className="text-left py-2 pr-3 font-medium">Credit Score</th>
+                <th className="text-left py-2 pr-3 font-medium">Payment Terms</th>
+                <th className="text-left py-2 pr-3 font-medium">Last Payment</th>
+                <th className="text-left py-2 pr-3 font-medium">On-Time %</th>
+                <th className="text-left py-2 pr-3 font-medium">Distance (Plant)</th>
+                <th className="text-left py-2 font-medium">SLA Penalty/hr</th>
+              </tr>
+            </thead>
             <tbody className="divide-y">
               {customers.map(c => {
                 const scoreBg = c.creditScore >= 750 ? "bg-emerald-100 text-emerald-700" : c.creditScore >= 650 ? "bg-blue-100 text-blue-700" : "bg-orange-100 text-orange-700";
@@ -1293,19 +1473,37 @@ function DecisionView({ scenario, onModify }: { scenario: Scenario; onModify: ()
           </table>
         </div>
       </div>
+
       <div className="bg-card rounded-xl border p-5">
         <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Financial Impact Analysis</h3>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-3">
-            <div className="p-3 rounded-lg bg-red-50 border border-red-200"><p className="text-xs text-red-700 font-semibold">Penalty Exposure (if delayed)</p><p className="font-bold text-xl text-red-600 font-mono mt-1">£{penaltyAvertedMax.toFixed(0)}K</p><p className="text-xs text-red-600">£{customers[0].penaltyPerHour}K/hr × 8 hrs est. delay</p></div>
-            <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200"><p className="text-xs text-emerald-700 font-semibold">Penalty Averted (LENA action)</p><p className="font-bold text-xl text-emerald-600 font-mono mt-1">£{penaltyAvertedMax.toFixed(0)}K</p><p className="text-xs text-emerald-600">All SLAs met · {recommended.onTimeRisk} risk</p></div>
+            <div className="p-3 rounded-lg bg-red-50 border border-red-200">
+              <p className="text-xs text-red-700 font-semibold">Penalty Exposure (if delayed)</p>
+              <p className="font-bold text-xl text-red-600 font-mono mt-1">£{penaltyAvertedMax.toFixed(0)}K</p>
+              <p className="text-xs text-red-600">£{customers[0].penaltyPerHour}K/hr × 8 hrs est. delay</p>
+            </div>
+            <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200">
+              <p className="text-xs text-emerald-700 font-semibold">Penalty Averted (LENA action)</p>
+              <p className="font-bold text-xl text-emerald-600 font-mono mt-1">£{penaltyAvertedMax.toFixed(0)}K</p>
+              <p className="text-xs text-emerald-600">All SLAs met · {selectedRoute.onTimeRisk} risk</p>
+            </div>
           </div>
           <div className="space-y-3">
-            <div className="p-3 rounded-lg bg-muted/40 border"><p className="text-xs text-muted-foreground font-semibold">Total Annual Revenue Protected</p><p className="font-bold text-xl font-mono mt-1">£{totalRevenue.toFixed(1)}M</p><p className="text-xs text-muted-foreground">Across {customers.length} long-term accounts</p></div>
-            <div className="p-3 rounded-lg bg-muted/40 border"><p className="text-xs text-muted-foreground font-semibold">Total Contract Value Protected</p><p className="font-bold text-xl font-mono mt-1">£{totalContract.toFixed(1)}M</p><p className="text-xs text-muted-foreground">Weighted contract portfolio</p></div>
+            <div className="p-3 rounded-lg bg-muted/40 border">
+              <p className="text-xs text-muted-foreground font-semibold">Total Annual Revenue Protected</p>
+              <p className="font-bold text-xl font-mono mt-1">£{totalRevenue.toFixed(1)}M</p>
+              <p className="text-xs text-muted-foreground">Across {customers.length} long-term accounts</p>
+            </div>
+            <div className="p-3 rounded-lg bg-muted/40 border">
+              <p className="text-xs text-muted-foreground font-semibold">Total Contract Value Protected</p>
+              <p className="font-bold text-xl font-mono mt-1">£{totalContract.toFixed(1)}M</p>
+              <p className="text-xs text-muted-foreground">Weighted contract portfolio</p>
+            </div>
           </div>
         </div>
       </div>
+
       <div className="bg-card rounded-xl border p-5">
         <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Factors Considered by LENA</h3>
         <div className="grid grid-cols-2 gap-3">
@@ -1315,8 +1513,8 @@ function DecisionView({ scenario, onModify }: { scenario: Scenario; onModify: ()
             { label: "Annual revenue weighting", value: `£${customers.map(c => c.annualRevenue + "M").join(" · ")}`, icon: BarChart3 },
             { label: "Credit risk assessment", value: `${customers.map(c => c.name.split(" ")[0] + ": " + c.creditScore).join(" · ")}`, icon: CreditCard },
             { label: "Payment terms & on-time accuracy", value: `${customers.map(c => c.paymentOnTimeAccuracy + "% OTA").join(" · ")}`, icon: Clock },
-            { label: "Route & fuel cost", value: `${recommended.totalKm} km · £${recommended.fuelCost} fuel`, icon: Navigation },
-            { label: "Carbon emissions", value: `${recommended.co2kg} kg CO₂`, icon: Zap },
+            { label: "Route & fuel cost", value: `${selectedRoute.totalKm} km · £${selectedRoute.fuelCost} fuel`, icon: Navigation },
+            { label: "Carbon emissions", value: `${selectedRoute.co2kg} kg CO₂`, icon: Zap },
             { label: "Road & weather conditions", value: scenario.id === "C" ? "A63 flooding — M62 reroute active" : "Normal — no disruptions", icon: AlertTriangle },
           ].map(f => (
             <div key={f.label} className="flex gap-3 p-3 rounded-lg bg-muted/40">
@@ -1326,6 +1524,7 @@ function DecisionView({ scenario, onModify }: { scenario: Scenario; onModify: ()
           ))}
         </div>
       </div>
+
       <div className="bg-card rounded-xl border p-5">
         <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Impact of This Decision</h3>
         <div className="grid grid-cols-3 gap-3">
@@ -1343,6 +1542,7 @@ function DecisionView({ scenario, onModify }: { scenario: Scenario; onModify: ()
           ))}
         </div>
       </div>
+
       <div className="bg-emerald-50 border border-emerald-300 rounded-xl p-4 flex items-start gap-3">
         <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
         <div>
@@ -1350,17 +1550,26 @@ function DecisionView({ scenario, onModify }: { scenario: Scenario; onModify: ()
           <p className="text-sm text-emerald-700 mt-1">{scenario.lenadecision}</p>
         </div>
       </div>
+
       {!approved && !rejected ? (
         <div className="bg-primary/5 border-2 border-primary/30 rounded-xl p-6">
           <div className="flex items-start gap-4">
             <Users className="h-6 w-6 text-primary shrink-0 mt-0.5" />
             <div className="flex-1">
               <h3 className="font-semibold">Human-in-the-Loop Approval Required</h3>
-              <p className="text-sm text-muted-foreground mt-1">LENA has generated this dispatch plan for truck <span className="font-mono font-semibold">{scenario.truckId}</span>. As COO, your approval is required before the tanker departs from {scenario.depotLocation}. You may modify the delivery sequence or allocation before approving.</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                LENA has generated this dispatch plan for truck <span className="font-mono font-semibold">{scenario.truckId}</span>. As COO, your approval is required before the tanker departs from {scenario.depotLocation}. You may modify the delivery sequence or allocation before approving.
+              </p>
               <div className="mt-4 flex gap-3">
-                <Button className="gap-2" onClick={() => setApproved(true)}><CheckCircle2 className="h-4 w-4" /> Approve & Dispatch {scenario.truckId}</Button>
-                <Button variant="outline" className="gap-2" onClick={onModify}><RotateCcw className="h-4 w-4" /> Modify Decision</Button>
-                <Button variant="outline" className="gap-2 border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => setRejected(true)}><XCircle className="h-4 w-4" /> Reject</Button>
+                <Button className="gap-2" onClick={() => setApproved(true)}>
+                  <CheckCircle2 className="h-4 w-4" /> Approve & Dispatch {scenario.truckId}
+                </Button>
+                <Button variant="outline" className="gap-2" onClick={handleModify}>
+                  <RotateCcw className="h-4 w-4" /> Modify Decision
+                </Button>
+                <Button variant="outline" className="gap-2 border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => setRejected(true)}>
+                  <XCircle className="h-4 w-4" /> Reject
+                </Button>
               </div>
             </div>
           </div>
@@ -1369,7 +1578,10 @@ function DecisionView({ scenario, onModify }: { scenario: Scenario; onModify: ()
         <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-700 rounded-xl p-6 space-y-3">
           <div className="flex items-center gap-3">
             <CheckCircle2 className="h-8 w-8 text-emerald-600 shrink-0" />
-            <div><h3 className="font-semibold text-emerald-700 dark:text-emerald-400">Dispatch Approved — {scenario.truckId} Departing</h3><p className="text-sm text-emerald-600 dark:text-emerald-500">Truck {scenario.truckId} dispatched from {scenario.depotLocation}. ETA completion: {recommended.totalTime} hours.</p></div>
+            <div>
+              <h3 className="font-semibold text-emerald-700 dark:text-emerald-400">Dispatch Approved — {scenario.truckId} Departing</h3>
+              <p className="text-sm text-emerald-600 dark:text-emerald-500">Truck {scenario.truckId} dispatched from {scenario.depotLocation}. ETA completion: {selectedRoute.totalTime} hours.</p>
+            </div>
           </div>
           <div className="grid grid-cols-3 gap-3 text-xs">
             <div className="bg-emerald-100 rounded-lg p-3"><p className="text-emerald-700 font-semibold">Penalty averted</p><p className="font-bold text-emerald-600 text-lg font-mono">£{penaltyAvertedMax.toFixed(0)}K</p></div>
@@ -1382,11 +1594,39 @@ function DecisionView({ scenario, onModify }: { scenario: Scenario; onModify: ()
         <div className="bg-red-50 dark:bg-red-950/30 border border-red-300 dark:border-red-700 rounded-xl p-6 space-y-3">
           <div className="flex items-center gap-3">
             <XCircle className="h-8 w-8 text-red-600 shrink-0" />
-            <div><h3 className="font-semibold text-red-700 dark:text-red-400">Dispatch Rejected — {scenario.truckId} On Hold</h3><p className="text-sm text-red-600 dark:text-red-500">The dispatch plan has been rejected. Truck {scenario.truckId} remains at {scenario.depotLocation} pending a revised plan.</p></div>
+            <div>
+              <h3 className="font-semibold text-red-700 dark:text-red-400">Dispatch Rejected — {scenario.truckId} On Hold</h3>
+              <p className="text-sm text-red-600 dark:text-red-500">The dispatch plan has been rejected. Truck {scenario.truckId} remains at {scenario.depotLocation} pending a revised plan.</p>
+            </div>
           </div>
-          <div className="flex gap-3 pt-1"><Button variant="outline" className="gap-2" onClick={onModify}><RotateCcw className="h-4 w-4" /> Review & Modify Plan</Button></div>
+          <div className="flex gap-3 pt-1">
+            <Button variant="outline" className="gap-2" onClick={handleModify}>
+              <RotateCcw className="h-4 w-4" /> Review & Modify Plan
+            </Button>
+          </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Animated Page Wrapper ────────────────────────────────────────────────────
+// Animates from top (translateY -20px → 0) instead of from bottom
+function PageTransition({ children, viewKey }: { children: React.ReactNode; viewKey: string }) {
+  return (
+    <div
+      key={viewKey}
+      style={{
+        animation: "slideFromTop 0.3s ease-out forwards",
+      }}
+    >
+      <style>{`
+        @keyframes slideFromTop {
+          from { opacity: 0; transform: translateY(-20px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+      {children}
     </div>
   );
 }
@@ -1396,8 +1636,10 @@ export default function SupplyChain() {
   const navigate = useNavigate();
   const [view, setView] = useState<View>("dashboard");
   const [scenario, setScenario] = useState<Scenario | null>(null);
+  // Track whether agent pipeline has already been completed
+  const [agentsDone, setAgentsDone] = useState(false);
 
-  // ✅ Auto-select scenario from sessionStorage (set by VotingPage after voting closes)
+  // Auto-select scenario from sessionStorage (set by VotingPage after voting closes)
   useEffect(() => {
     const sid = sessionStorage.getItem("lena_scenario") as ScenarioId | null;
     const autostart = sessionStorage.getItem("lena_autostart");
@@ -1405,13 +1647,25 @@ export default function SupplyChain() {
       sessionStorage.removeItem("lena_scenario");
       sessionStorage.removeItem("lena_autostart");
       setScenario(SCENARIOS[sid]);
+      setAgentsDone(false);
       setView("telemetry-connect");
     }
   }, []);
 
-  // ✅ "Go to Audience Vote" navigates to /voting
   function handleGoToVoting() {
     navigate("/voting");
+  }
+
+  // Scroll to top on every view change
+  const contentRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (contentRef.current) {
+      contentRef.current.scrollTop = 0;
+    }
+  }, [view]);
+
+  function navigateTo(v: View) {
+    setView(v);
   }
 
   return (
@@ -1421,10 +1675,10 @@ export default function SupplyChain() {
           activeView={view}
           scenarioId={scenario?.id}
           onNavigate={(v) => {
-            if (v === "dashboard") setView("dashboard");
-            else if (v === "decision" && scenario) setView("decision");
-            else if (v === "simulation" && scenario) setView("simulation");
-            else if (v === "agent-working" && scenario) setView("agent-working");
+            if (v === "dashboard") navigateTo("dashboard");
+            else if (v === "decision" && scenario) navigateTo("decision");
+            else if (v === "simulation" && scenario) navigateTo("simulation");
+            else if (v === "agent-working" && scenario) navigateTo("agent-working");
           }}
         />
         <div className="flex-1 flex flex-col overflow-hidden">
@@ -1441,13 +1695,44 @@ export default function SupplyChain() {
               {view === "decision" && <><ChevronRight className="h-3 w-3" /><span className="text-foreground">Decision Summary</span></>}
             </nav>
           </div>
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto" ref={contentRef}>
             <div className="max-w-6xl mx-auto px-6 py-6">
-              {view === "dashboard" && <DashboardView onGoToVoting={handleGoToVoting} />}
-              {view === "telemetry-connect" && scenario && <TelemetryConnectView scenario={scenario} onComplete={() => setView("agent-working")} />}
-              {view === "agent-working" && scenario && <AgentWorkingView scenario={scenario} onComplete={() => setView("simulation")} />}
-              {view === "simulation" && scenario && <SimulationView scenario={scenario} onDecision={() => setView("decision")} />}
-              {view === "decision" && scenario && <DecisionView scenario={scenario} onModify={() => setView("simulation")} />}
+              <PageTransition viewKey={view}>
+                {view === "dashboard" && (
+                  <DashboardView onGoToVoting={handleGoToVoting} />
+                )}
+                {view === "telemetry-connect" && scenario && (
+                  <TelemetryConnectView
+                    scenario={scenario}
+                    onComplete={() => navigateTo("agent-working")}
+                    onBack={() => navigateTo("dashboard")}
+                  />
+                )}
+                {view === "agent-working" && scenario && (
+                  <AgentWorkingView
+                    scenario={scenario}
+                    agentsDone={agentsDone}
+                    onComplete={() => {
+                      setAgentsDone(true);
+                      navigateTo("simulation");
+                    }}
+                    onBack={() => navigateTo("telemetry-connect")}
+                  />
+                )}
+                {view === "simulation" && scenario && (
+                  <SimulationView
+                    scenario={scenario}
+                    onDecision={() => navigateTo("decision")}
+                    onBack={() => navigateTo("agent-working")}
+                  />
+                )}
+                {view === "decision" && scenario && (
+                  <DecisionView
+                    scenario={scenario}
+                    onBack={() => navigateTo("simulation")}
+                  />
+                )}
+              </PageTransition>
             </div>
           </div>
         </div>
