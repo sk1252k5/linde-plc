@@ -1,8 +1,8 @@
-import { type RouteObject, Navigate } from "react-router-dom";
+import { type RouteObject, Navigate, Outlet } from "react-router-dom";
 import Layout from "./components/Layout";
 import SystemLayout from "./components/SystemLayout";
 import LandingPage from "./pages/LandingPage";
-
+// import CommandCenter from "./pages/CommandCenter";
 import AgentNetwork from "./pages/AgentNetwork";
 import SupplyChain from "./pages/SupplyChain";
 import Manufacturing from "./pages/Manufacturing";
@@ -16,16 +16,22 @@ import VisionPanel from "./VisionPanel";
 import NuroModels from "./pages/NuroModels";
 import NuroForge from "./pages/NuroForge";
 import NuroStack from "./pages/NuroStack";
-import Nexus from "./pages/Nexus";
-import NuroVault from "./pages/NuroVault";
 import ConsolidatedDashboard from "./pages/ConsolidatedDashboard";
 import VotingPage from "./pages/VotingPage";
-import MobileVotePage from "./pages/MobileVotePage"; // ← NEW
+import MobileVotePage from "./pages/MobileVotePage";
+import { LenaAssistant } from "./components/LenaAssistant";
 
+const RootShell = () => (
+  <>
+    <LenaAssistant />
+    <Outlet />
+  </>
+);
 
 export const Routes: RouteObject[] = [
   {
     path: "/",
+    element: <RootShell />,
     children: [
       { index: true, element: <LandingPage /> },
 
@@ -43,15 +49,12 @@ export const Routes: RouteObject[] = [
           { path: "nurostack", element: <NuroStack /> },
           { path: "nuromodels", element: <NuroModels /> },
           { path: "nuroforge", element: <NuroForge /> },
-
-          {path: "nexus", element: <Nexus/>},
-          {path: "nurovault", element: <NuroVault/>}
         ],
       },
       {
         element: <Layout />,
         children: [
-         
+          // { path: "command-center", element: <CommandCenter /> },
           { path: "agents", element: <AgentNetwork /> },
           { path: "supply-chain", element: <SupplyChain /> },
           { path: "manufacturing", element: <Manufacturing /> },
@@ -68,3 +71,4 @@ export const Routes: RouteObject[] = [
   },
   { path: "*", element: <Navigate to="/" replace /> },
 ];
+
